@@ -1,80 +1,76 @@
-import { ChatWindow } from "@/components/ChatWindow";
+'use client'
+
+import { useState, useEffect, useRef, useCallback } from 'react'
 
 export default function Home() {
-  const InfoCard = (
-    <div className="p-4 md:p-8 rounded bg-[#25252d] w-full max-h-[85%] overflow-hidden">
-      <h1 className="text-3xl md:text-4xl mb-4">
-        ▲ Next.js + LangChain.js 🦜🔗
-      </h1>
-      <ul>
-        <li className="text-l">
-          🤝
-          <span className="ml-2">
-            This template showcases a simple chatbot using{" "}
-            <a href="https://js.langchain.com/" target="_blank">
-              LangChain.js
-            </a>{" "}
-            and the Vercel{" "}
-            <a href="https://sdk.vercel.ai/docs" target="_blank">
-              AI SDK
-            </a>{" "}
-            in a{" "}
-            <a href="https://nextjs.org/" target="_blank">
-              Next.js
-            </a>{" "}
-            project.
-          </span>
-        </li>
-        <li className="hidden text-l md:block">
-          💻
-          <span className="ml-2">
-            You can find the prompt and model logic for this use-case in{" "}
-            <code>app/api/chat/route.ts</code>.
-          </span>
-        </li>
-        <li>
-          🏴‍☠️
-          <span className="ml-2">
-            By default, the bot is pretending to be a pirate, but you can change
-            the prompt to whatever you want!
-          </span>
-        </li>
-        <li className="hidden text-l md:block">
-          🎨
-          <span className="ml-2">
-            The main frontend logic is found in <code>app/page.tsx</code>.
-          </span>
-        </li>
-        <li className="text-l">
-          🐙
-          <span className="ml-2">
-            This template is open source - you can see the source code and
-            deploy your own version{" "}
-            <a
-              href="https://github.com/langchain-ai/langchain-nextjs-template"
-              target="_blank"
-            >
-              from the GitHub repo
-            </a>
-            !
-          </span>
-        </li>
-        <li className="text-l">
-          👇
-          <span className="ml-2">
-            Try asking e.g. <code>What is it like to be a pirate?</code> below!
-          </span>
-        </li>
-      </ul>
-    </div>
-  );
+  /* TODO: Add state variables */
+  // Keep track of the classification result and the model loading status.
+  const [result, setResult] = useState<any>(null);
+  const [ready, setReady] = useState(false);
+
+  // Create a reference to the worker object.
+  const worker = useRef<(Worker) | null>(null);
+
+  // We use the `useEffect` hook to set up the worker as soon as the `App` component is mounted.
+  useEffect(() => {
+    if (!worker.current) {
+      // Create the worker if it does not yet exist.
+      worker.current = new Worker(new URL('./worker.ts', import.meta.url), {
+        type: 'module'
+      });
+    }
+
+    // Create a callback function for messages from the worker thread.
+    const onMessageReceived = (e: any) => {
+      switch (e.data.status) {
+        case 'initiate':
+          setReady(false);
+          break;
+        case 'progress':
+          console.log(e.data);
+          break;
+        case 'ready':
+          setReady(true);
+          break;
+        case 'complete':
+          console.log(e.data.output);
+          setResult(e.data.output);
+          break;
+      }
+    };
+
+    // Attach the callback function as an event listener.
+    worker.current.addEventListener('message', onMessageReceived);
+
+    // Define a cleanup function for when the component is unmounted.
+    return () => worker.current?.removeEventListener('message', onMessageReceived);
+  });
+
+  const classify = useCallback((text: any) => {
+    if (worker.current) {
+      worker.current.postMessage({ text });
+    }
+  }, []);
+
   return (
-    <ChatWindow
-      endpoint="api/chat"
-      emoji="🏴‍☠️"
-      titleText="Patchy the Chatty Pirate"
-      placeholder="I'm an LLM pretending to be a pirate! Ask me about the pirate life!"
-      emptyStateComponent={InfoCard}
-    ></ChatWindow>
+    <main className="flex min-h-screen flex-col items-center justify-center p-12">
+      <h1 className="text-5xl font-bold mb-2 text-center">Transformers.js</h1>
+      <h2 className="text-2xl mb-4 text-center">Next.js template</h2>
+
+      <input
+        className="w-full max-w-xs p-2 border border-gray-300 rounded mb-4"
+        type="text"
+        placeholder="Enter text here"
+        onInput={e => {
+            classify((e.target as any).value);
+        }}
+      />
+
+      {ready !== null && (
+        <pre className="bg-gray-100 p-2 rounded">
+          { (!ready || !result) ? 'Loading...' : JSON.stringify(result, null, 2) }
+        </pre>
+      )}
+    </main>
   );
 }
