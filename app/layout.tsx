@@ -13,23 +13,25 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <title>LangChain + Next.js Template</title>
+        <title>Fully Client-Side Chat Over Documents</title>
         <link rel="shortcut icon" href="/images/favicon.ico" />
         <meta
           name="description"
-          content="Starter template showing how to use LangChain in Next.js projects. See source code and deploy your own at https://github.com/langchain-ai/langchain-nextjs-template!"
+          content="Upload a PDF, then ask questions about it - without a single remote request!"
         />
-        <meta property="og:title" content="LangChain + Next.js Template" />
+        <meta property="og:title" content="Fully Client-Side Chat Over Documents" />
         <meta
           property="og:description"
-          content="Starter template showing how to use LangChain in Next.js projects. See source code and deploy your own at https://github.com/langchain-ai/langchain-nextjs-template!"
+          content="Upload a PDF, then ask questions about it - without a single remote request!"
         />
         <meta property="og:image" content="/images/og-image.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
         <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="LangChain + Next.js Template" />
+        <meta name="twitter:title" content="Fully Client-Side Chat Over Documents" />
         <meta
           name="twitter:description"
-          content="Starter template showing how to use LangChain in Next.js projects. See source code and deploy your own at https://github.com/langchain-ai/langchain-nextjs-template!"
+          content="Upload a PDF, then ask questions about it - without a single remote request!"
         />
         <meta name="twitter:image" content="/images/og-image.png" />
       </head>

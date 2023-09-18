@@ -196,7 +196,7 @@ export function ChatWindow(props: {
           <li className="text-l">
             👇
             <span className="ml-2">
-              Try adding a PDF below, then asking questions! You can even turn off your WiFi.
+              Try embedding a PDF below, then asking questions! You can even turn off your WiFi.
             </span>
           </li>
         </ul>
