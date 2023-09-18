@@ -156,7 +156,7 @@ export function ChatWindow(props: {
           <li className="text-l">
             🏡
             <span className="ml-2">
-              Yes, it's another chat over documents implementation... but this one is entirely local!
+              Yes, it&apos;s another chat over documents implementation... but this one is entirely local!
             </span>
           </li>
           <li className="hidden text-l md:block">
@@ -168,7 +168,7 @@ export function ChatWindow(props: {
           <li>
             ⚙️
             <span className="ml-2">
-              The default LLM is Llama 2 run locally by Ollama. You'll need to install <a target="_blank" href="https://ollama.ai">the Ollama desktop app</a> and run the following command to give this site access to the locally running model:
+              The default LLM is Llama 2 run locally by Ollama. You&apos;ll need to install <a target="_blank" href="https://ollama.ai">the Ollama desktop app</a> and run the following command to give this site access to the locally running model:
               <br/>
               <pre className="inline-flex px-2 py-1 my-2 rounded">$ OLLAMA_ORIGINS=https://webml-demo.vercel.app OLLAMA_HOST=127.0.0.1:11435 ollama serve</pre>
             </span>
