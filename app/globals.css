@@ -8,8 +8,7 @@ body {
 }
 
 body input,
-body textarea,
-body pre {
+body textarea {
   color: black;
 }
 
@@ -25,8 +24,13 @@ p {
   margin: 8px 0;
 }
 
-code {
+code, pre {
   color: #ffa500;
+}
+
+pre {
+  background-color: black;
+  color: #39ff14;
 }
 
 li {
