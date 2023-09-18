@@ -102,7 +102,7 @@ export function ChatWindow(props: {
       });
       setIsLoading(false);
     }
-  });
+  }, []);
 
   async function embedPDF (e: FormEvent<HTMLFormElement>) {
     console.log(e);
