@@ -9,14 +9,17 @@ import { HuggingFaceTransformersEmbeddings } from "langchain/embeddings/hf_trans
 import { VoyVectorStore } from "langchain/vectorstores/voy";
 import { ChatOllama } from "langchain/chat_models/ollama";
 import { Document } from "langchain/document";
-import { ChatPromptTemplate, MessagesPlaceholder, PromptTemplate } from "langchain/prompts";
+import {
+  ChatPromptTemplate,
+  MessagesPlaceholder,
+  PromptTemplate,
+} from "langchain/prompts";
 import { BaseLanguageModel } from "langchain/base_language";
 import { BaseRetriever } from "langchain/schema/retriever";
 import { RunnableSequence } from "langchain/schema/runnable";
 import { StringOutputParser } from "langchain/schema/output_parser";
 import { AIMessage, BaseMessage, HumanMessage } from "langchain/schema";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
-
 
 const embeddings = new HuggingFaceTransformersEmbeddings({
   modelName: "Xenova/all-MiniLM-L6-v2",
@@ -25,7 +28,7 @@ const embeddings = new HuggingFaceTransformersEmbeddings({
 const voyClient = new VoyClient();
 const vectorstore = new VoyVectorStore(voyClient, embeddings);
 const ollama = new ChatOllama({
-  baseUrl: "http://localhost:11435"
+  baseUrl: "http://localhost:11435",
 });
 
 const REPHRASE_QUESTION_TEMPLATE = `Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
@@ -35,7 +38,9 @@ Chat History:
 Follow Up Input: {question}
 Standalone Question:`;
 
-const rephraseQuestionChainPrompt = PromptTemplate.fromTemplate(REPHRASE_QUESTION_TEMPLATE);
+const rephraseQuestionChainPrompt = PromptTemplate.fromTemplate(
+  REPHRASE_QUESTION_TEMPLATE,
+);
 
 const RESPONSE_SYSTEM_TEMPLATE = `You are an experienced researcher, expert at interpreting and answering questions based on provided sources. Using the provided context, answer the user's question to the best of your ability using the resources provided.
 Generate a comprehensive and informative answer (but no more than 80 words) for a given question based solely on the provided search results (URL and content). You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text.
@@ -47,17 +52,27 @@ Anything between the following \`context\` html blocks is retrieved from a knowl
 
 REMEMBER: If there is no relevant information within the context, just say "Hmm, I'm not sure." Don't try to make up an answer. Anything between the preceding 'context' html blocks is retrieved from a knowledge bank, not part of the conversation with the user.`;
 
-const responseChainPrompt = ChatPromptTemplate.fromPromptMessages<{context: string, chat_history: BaseMessage[], question: string}>([
+const responseChainPrompt = ChatPromptTemplate.fromPromptMessages<{
+  context: string;
+  chat_history: BaseMessage[];
+  question: string;
+}>([
   ["system", RESPONSE_SYSTEM_TEMPLATE],
   new MessagesPlaceholder("chat_history"),
   ["user", `{question}`],
 ]);
 
 const formatDocs = (docs: Document[]) => {
-  return docs.map((doc, i) => `<doc id='${i}'>${doc.pageContent}</doc>`).join('\n');
-}
+  return docs
+    .map((doc, i) => `<doc id='${i}'>${doc.pageContent}</doc>`)
+    .join("\n");
+};
 
-const createRetrievalChain = (llm: BaseLanguageModel, retriever: BaseRetriever, chatHistory: ChatWindowMessage[]) => {
+const createRetrievalChain = (
+  llm: BaseLanguageModel,
+  retriever: BaseRetriever,
+  chatHistory: ChatWindowMessage[],
+) => {
   if (chatHistory.length) {
     return RunnableSequence.from([
       rephraseQuestionChainPrompt,
@@ -73,7 +88,7 @@ const createRetrievalChain = (llm: BaseLanguageModel, retriever: BaseRetriever, 
       formatDocs,
     ]);
   }
-}
+};
 
 const embedPDF = async (pdfDataUrl: string) => {
   const parsedPdf = await pdf.getDocument({
@@ -94,9 +109,7 @@ const embedPDF = async (pdfDataUrl: string) => {
       continue;
     }
 
-    const text = content.items
-      .map((item) => (item as TextItem).str)
-      .join("\n");
+    const text = content.items.map((item) => (item as TextItem).str).join("\n");
 
     documents.push(
       new Document({
@@ -112,7 +125,7 @@ const embedPDF = async (pdfDataUrl: string) => {
             pageNumber: i,
           },
         },
-      })
+      }),
     );
   }
 
@@ -121,7 +134,7 @@ const embedPDF = async (pdfDataUrl: string) => {
     chunkOverlap: 50,
   });
 
-  const docs = await splitter.splitDocuments(documents)
+  const docs = await splitter.splitDocuments(documents);
 
   self.postMessage({
     type: "log",
@@ -135,7 +148,11 @@ const queryVectorStore = async (messages: ChatWindowMessage[]) => {
   const text = messages[messages.length - 1].content;
   const chatHistory: ChatWindowMessage[] = messages.slice(0, -1);
 
-  const retrievalChain = createRetrievalChain(ollama, vectorstore.asRetriever(), chatHistory);
+  const retrievalChain = createRetrievalChain(
+    ollama,
+    vectorstore.asRetriever(),
+    chatHistory,
+  );
   const responseChain = RunnableSequence.from([
     responseChainPrompt,
     ollama,
@@ -144,7 +161,9 @@ const queryVectorStore = async (messages: ChatWindowMessage[]) => {
 
   const formattedDocs = await retrievalChain.invoke({
     question: text,
-    chat_history: chatHistory.map((message) => `${message.role}: ${message.content}`).join('\n'),
+    chat_history: chatHistory
+      .map((message) => `${message.role}: ${message.content}`)
+      .join("\n"),
   });
 
   const stream = await responseChain.stream({
@@ -172,7 +191,7 @@ const queryVectorStore = async (messages: ChatWindowMessage[]) => {
     type: "complete",
     data: "OK",
   });
-}
+};
 
 // Listen for messages from the main thread
 self.addEventListener("message", async (event: any) => {

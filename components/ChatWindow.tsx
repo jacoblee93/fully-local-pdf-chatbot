@@ -185,7 +185,7 @@ export function ChatWindow(props: {
               This template is open source - you can see the source code and
               deploy your own version{" "}
               <a
-                href="https://github.com/jacoblee93/webml"
+                href="https://github.com/jacoblee93/fully-local-pdf-chatbot"
                 target="_blank"
               >
                 from the GitHub repo
