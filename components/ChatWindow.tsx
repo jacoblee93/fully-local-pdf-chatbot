@@ -111,7 +111,7 @@ export function ChatWindow(props: {
     if (!worker.current) {
       // Create the worker if it does not yet exist.
       worker.current = new Worker(new URL('../app/worker.ts', import.meta.url), {
-        type: 'module'
+        type: 'module',
       });
       setIsLoading(false);
     }

@@ -107,6 +107,18 @@ const embedPDF = async (pdfBlob: Blob) => {
   await vectorstore.addDocuments(splitDocs);
 };
 
+const _formatChatHistoryAsMessages = async (
+  chatHistory: ChatWindowMessage[],
+) => {
+  return chatHistory.map((chatMessage) => {
+    if (chatMessage.role === "human") {
+      return new HumanMessage(chatMessage.content);
+    } else {
+      return new AIMessage(chatMessage.content);
+    }
+  });
+};
+
 const queryVectorStore = async (messages: ChatWindowMessage[]) => {
   const text = messages[messages.length - 1].content;
   const chatHistory: ChatWindowMessage[] = messages.slice(0, -1);
@@ -122,23 +134,21 @@ const queryVectorStore = async (messages: ChatWindowMessage[]) => {
     new StringOutputParser(),
   ]);
 
-  const formattedDocs = await retrievalChain.invoke({
-    question: text,
-    chat_history: chatHistory
-      .map((message) => `${message.role}: ${message.content}`)
-      .join("\n"),
-  });
+  const fullChain = RunnableSequence.from([
+    {
+      question: (input) => input.question,
+      chat_history: RunnableSequence.from([
+        (input) => input.chat_history,
+        _formatChatHistoryAsMessages,
+      ]),
+      context: retrievalChain,
+    },
+    responseChain,
+  ]);
 
-  const stream = await responseChain.stream({
+  const stream = await fullChain.stream({
     question: text,
-    chat_history: chatHistory.map((chatMessage) => {
-      if (chatMessage.role === "human") {
-        return new HumanMessage(chatMessage.content);
-      } else {
-        return new AIMessage(chatMessage.content);
-      }
-    }),
-    context: formattedDocs,
+    chat_history: chatHistory,
   });
 
   for await (const chunk of stream) {
