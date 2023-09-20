@@ -43,6 +43,12 @@ export function ChatWindow(props: {
             case "chunk":
               controller.enqueue(e.data.data);
               break;
+            case "error": 
+              worker.current?.removeEventListener("message", onMessageReceived);
+              console.log(e.data.error);
+              const error = new Error(e.data.error);
+              controller.error(error);
+              break;
             case "complete":
               worker.current?.removeEventListener("message", onMessageReceived);
               controller.close();
@@ -72,25 +78,32 @@ export function ChatWindow(props: {
     setIsLoading(true);
     setInput("");
 
-    const stream = await queryStore(newMessages);
-    const reader = stream.getReader();
-
-    let chunk = await reader.read();
-
-    const aiResponseMessage: ChatWindowMessage = {
-      content: "",
-      role: "ai" as const,
-    };
-
-    setMessages([...newMessages, aiResponseMessage]);
-
-    while (!chunk.done) {
-      aiResponseMessage.content += chunk.value;
+    try {
+      const stream = await queryStore(newMessages);
+      const reader = stream.getReader();
+  
+      let chunk = await reader.read();
+  
+      const aiResponseMessage: ChatWindowMessage = {
+        content: "",
+        role: "ai" as const,
+      };
+  
       setMessages([...newMessages, aiResponseMessage]);
-      chunk = await reader.read();
+  
+      while (!chunk.done) {
+        aiResponseMessage.content += chunk.value;
+        setMessages([...newMessages, aiResponseMessage]);
+        chunk = await reader.read();
+      }
+  
+      setIsLoading(false); 
+    } catch (e: any) {
+      setIsLoading(false);
+      toast(`There was an issue with querying your PDF: ${e.message}.`, {
+        theme: "dark",
+      });
     }
-
-    setIsLoading(false);
   }
 
   // We use the `useEffect` hook to set up the worker as soon as the `App` component is mounted.
@@ -122,6 +135,14 @@ export function ChatWindow(props: {
         case "log":
           console.log(e.data);
           break;
+        case "error": 
+          worker.current?.removeEventListener("message", onMessageReceived);
+          setIsLoading(false);
+          console.log(e.data.error);
+          toast(`There was an issue embedding your PDF: ${e.data.error}.`, {
+            theme: "dark",
+          });
+          break;
         case "complete":
           worker.current?.removeEventListener("message", onMessageReceived);
           setIsLoading(false);
@@ -133,31 +154,6 @@ export function ChatWindow(props: {
       }
     };
     worker.current?.addEventListener("message", onMessageReceived);
-    // reader.addEventListener(
-    //   "load",
-    //   () => {
-    //     // convert image file to base64 string
-    //     worker.current?.postMessage({ pdf: reader.result });
-    //     const onMessageReceived = (e: any) => {
-    //       switch (e.data.type) {
-    //         case "log":
-    //           console.log(e.data);
-    //           break;
-    //         case "complete":
-    //           worker.current?.removeEventListener("message", onMessageReceived);
-    //           setIsLoading(false);
-    //           setReadyToChat(true);
-    //           toast(`Embedding successful! Now try asking a question about your PDF.`, {
-    //             theme: "dark",
-    //           });
-    //           break;
-    //       }
-    //     };
-    //     worker.current?.addEventListener("message", onMessageReceived);
-    //   },
-    //   false,
-    // );
-    // reader.readAsDataURL(selectedPDF);
   }
 
   const choosePDFComponent = (

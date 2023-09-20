@@ -160,17 +160,24 @@ const queryVectorStore = async (messages: ChatWindowMessage[]) => {
 self.addEventListener("message", async (event: any) => {
   self.postMessage({
     type: "log",
-    data: `Received: ${JSON.stringify(event.data)}`,
+    data: `Received data!`,
   });
 
-  if (event.data.pdf) {
-    await embedPDF(event.data.pdf);
-  } else {
-    await queryVectorStore(event.data.messages);
+  try {
+    if (event.data.pdf) {
+      await embedPDF(event.data.pdf);
+    } else {
+      await queryVectorStore(event.data.messages);
+    }
+
+    self.postMessage({
+      type: "complete",
+      data: "OK",
+    });
+  } catch (e: any) {
+    self.postMessage({
+      type: "error",
+      error: `${e.message}. Are you running Ollama?`,
+    });
   }
-
-  self.postMessage({
-    type: "complete",
-    data: "OK",
-  });
 });
