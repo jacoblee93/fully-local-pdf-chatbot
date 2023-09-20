@@ -108,7 +108,7 @@ export function ChatWindow(props: {
     console.log(e);
     console.log(selectedPDF);
     e.preventDefault();
-    const reader = new FileReader();
+    // const reader = new FileReader();
     if (selectedPDF === null) {
       toast(`You must select a file to embed.`, {
         theme: "dark",
@@ -116,31 +116,48 @@ export function ChatWindow(props: {
       return;
     }
     setIsLoading(true);
-    reader.addEventListener(
-      "load",
-      () => {
-        // convert image file to base64 string
-        worker.current?.postMessage({ pdf: reader.result });
-        const onMessageReceived = (e: any) => {
-          switch (e.data.type) {
-            case "log":
-              console.log(e.data);
-              break;
-            case "complete":
-              worker.current?.removeEventListener("message", onMessageReceived);
-              setIsLoading(false);
-              setReadyToChat(true);
-              toast(`Embedding successful! Now try asking a question about your PDF.`, {
-                theme: "dark",
-              });
-              break;
-          }
-        };
-        worker.current?.addEventListener("message", onMessageReceived);
-      },
-      false,
-    );
-    reader.readAsDataURL(selectedPDF);
+    worker.current?.postMessage({ pdf: selectedPDF });
+    const onMessageReceived = (e: any) => {
+      switch (e.data.type) {
+        case "log":
+          console.log(e.data);
+          break;
+        case "complete":
+          worker.current?.removeEventListener("message", onMessageReceived);
+          setIsLoading(false);
+          setReadyToChat(true);
+          toast(`Embedding successful! Now try asking a question about your PDF.`, {
+            theme: "dark",
+          });
+          break;
+      }
+    };
+    worker.current?.addEventListener("message", onMessageReceived);
+    // reader.addEventListener(
+    //   "load",
+    //   () => {
+    //     // convert image file to base64 string
+    //     worker.current?.postMessage({ pdf: reader.result });
+    //     const onMessageReceived = (e: any) => {
+    //       switch (e.data.type) {
+    //         case "log":
+    //           console.log(e.data);
+    //           break;
+    //         case "complete":
+    //           worker.current?.removeEventListener("message", onMessageReceived);
+    //           setIsLoading(false);
+    //           setReadyToChat(true);
+    //           toast(`Embedding successful! Now try asking a question about your PDF.`, {
+    //             theme: "dark",
+    //           });
+    //           break;
+    //       }
+    //     };
+    //     worker.current?.addEventListener("message", onMessageReceived);
+    //   },
+    //   false,
+    // );
+    // reader.readAsDataURL(selectedPDF);
   }
 
   const choosePDFComponent = (

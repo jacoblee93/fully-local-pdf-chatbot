@@ -2987,7 +2987,7 @@ __metadata:
     encoding: ^0.1.13
     eslint: 8.46.0
     eslint-config-next: 13.4.12
-    langchain: ^0.0.150
+    langchain: ^0.0.152
     next: 13.4.12
     pdf-parse: ^1.1.1
     postcss: 8.4.27
@@ -3001,9 +3001,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"langchain@npm:^0.0.150":
-  version: 0.0.150
-  resolution: "langchain@npm:0.0.150"
+"langchain@npm:^0.0.152":
+  version: 0.0.152
+  resolution: "langchain@npm:0.0.152"
   dependencies:
     "@anthropic-ai/sdk": ^0.6.2
     ansi-styles: ^5.0.0
@@ -3040,6 +3040,7 @@ __metadata:
     "@aws-sdk/signature-v4": ^3.374.0
     "@azure/storage-blob": ^12.15.0
     "@clickhouse/client": ^0.0.14
+    "@cloudflare/workers-types": ^4.20230904.0
     "@elastic/elasticsearch": ^8.4.0
     "@getmetal/metal-sdk": "*"
     "@getzep/zep-js": ^0.7.0
@@ -3132,6 +3133,8 @@ __metadata:
     "@azure/storage-blob":
       optional: true
     "@clickhouse/client":
+      optional: true
+    "@cloudflare/workers-types":
       optional: true
     "@elastic/elasticsearch":
       optional: true
@@ -3269,7 +3272,7 @@ __metadata:
       optional: true
     youtubei.js:
       optional: true
-  checksum: 81b47a674a2b23c69149f42a5cb6adae764720fb999c702d5e2fa957315731d2db0838f31ac6c91898438e5c3b896f974d062003b2d9c471658464b1dd234cd6
+  checksum: 638d3cbf31ee71d9e1f39840a754ccfbf665597128ed783f1786533d669beac4d8c461981e9f6ee156c2cbcdda8984b9e2f680ff7c174d115b72c11c91521ac1
   languageName: node
   linkType: hard
 

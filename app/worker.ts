@@ -2,9 +2,7 @@ import { ChatWindowMessage } from "@/schema/ChatWindowMessage";
 
 import { Voy as VoyClient } from "voy-search";
 
-import * as pdf from "pdf-parse/lib/pdf.js/v1.10.100/build/pdf.js";
-import type { TextItem } from "pdf-parse/lib/pdf.js/v1.10.100/build/pdf.js";
-
+import { WebPDFLoader } from "langchain/document_loaders/web/pdf";
 import { HuggingFaceTransformersEmbeddings } from "langchain/embeddings/hf_transformers";
 import { VoyVectorStore } from "langchain/vectorstores/voy";
 import { ChatOllama } from "langchain/chat_models/ollama";
@@ -90,58 +88,23 @@ const createRetrievalChain = (
   }
 };
 
-const embedPDF = async (pdfDataUrl: string) => {
-  const parsedPdf = await pdf.getDocument({
-    data: atob(pdfDataUrl.split(",")[1]),
-    useWorkerFetch: false,
-    isEvalSupported: false,
-    useSystemFonts: true,
-  }).promise;
-  const meta = await parsedPdf.getMetadata().catch(() => null);
-
-  const documents: Document[] = [];
-
-  for (let i = 1; i <= parsedPdf.numPages; i += 1) {
-    const page = await parsedPdf.getPage(i);
-    const content = await page.getTextContent();
-
-    if (content.items.length === 0) {
-      continue;
-    }
-
-    const text = content.items.map((item) => (item as TextItem).str).join("\n");
-
-    documents.push(
-      new Document({
-        pageContent: text,
-        metadata: {
-          pdf: {
-            version: pdf.version,
-            info: meta?.info,
-            metadata: meta?.metadata,
-            totalPages: parsedPdf.numPages,
-          },
-          loc: {
-            pageNumber: i,
-          },
-        },
-      }),
-    );
-  }
+const embedPDF = async (pdfBlob: Blob) => {
+  const pdfLoader = new WebPDFLoader(pdfBlob);
+  const docs = await pdfLoader.load();
 
   const splitter = new RecursiveCharacterTextSplitter({
     chunkSize: 500,
     chunkOverlap: 50,
   });
 
-  const docs = await splitter.splitDocuments(documents);
+  const splitDocs = await splitter.splitDocuments(docs);
 
   self.postMessage({
     type: "log",
-    data: docs,
+    data: splitDocs,
   });
 
-  await vectorstore.addDocuments(docs);
+  await vectorstore.addDocuments(splitDocs);
 };
 
 const queryVectorStore = async (messages: ChatWindowMessage[]) => {
