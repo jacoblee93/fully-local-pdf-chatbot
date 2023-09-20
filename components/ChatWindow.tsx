@@ -64,15 +64,13 @@ export function ChatWindow(props: {
   async function sendMessage(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
 
-    if (!messages.length) {
-      await new Promise(resolve => setTimeout(resolve, 300));
-    }
-
-    if (isLoading) {
+    if (isLoading || !input) {
       return;
     }
 
-    const newMessages = [...messages, { role: "human" as const, content: input }];
+    const initialInput = input;
+    const initialMessages = [...messages];
+    const newMessages = [...initialMessages, { role: "human" as const, content: input }];
 
     setMessages(newMessages)
     setIsLoading(true);
@@ -99,8 +97,10 @@ export function ChatWindow(props: {
   
       setIsLoading(false); 
     } catch (e: any) {
+      setMessages(initialMessages);
       setIsLoading(false);
-      toast(`There was an issue with querying your PDF: ${e.message}.`, {
+      setInput(initialInput);
+      toast(`There was an issue with querying your PDF: ${e.message}`, {
         theme: "dark",
       });
     }
@@ -139,7 +139,7 @@ export function ChatWindow(props: {
           worker.current?.removeEventListener("message", onMessageReceived);
           setIsLoading(false);
           console.log(e.data.error);
-          toast(`There was an issue embedding your PDF: ${e.data.error}.`, {
+          toast(`There was an issue embedding your PDF: ${e.data.error}`, {
             theme: "dark",
           });
           break;

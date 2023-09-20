@@ -163,21 +163,30 @@ self.addEventListener("message", async (event: any) => {
     data: `Received data!`,
   });
 
-  try {
-    if (event.data.pdf) {
+  if (event.data.pdf) {
+    try {
       await embedPDF(event.data.pdf);
-    } else {
-      await queryVectorStore(event.data.messages);
+    } catch (e: any) {
+      self.postMessage({
+        type: "error",
+        error: e.message,
+      });
+      throw e;
     }
-
-    self.postMessage({
-      type: "complete",
-      data: "OK",
-    });
-  } catch (e: any) {
-    self.postMessage({
-      type: "error",
-      error: `${e.message}. Are you running Ollama?`,
-    });
+  } else {
+    try {
+      await queryVectorStore(event.data.messages);
+    } catch (e: any) {
+      self.postMessage({
+        type: "error",
+        error: `${e.message}. Make sure you are running Ollama.`,
+      });
+      throw e;
+    }
   }
+
+  self.postMessage({
+    type: "complete",
+    data: "OK",
+  });
 });
