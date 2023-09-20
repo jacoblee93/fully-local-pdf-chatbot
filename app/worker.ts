@@ -27,6 +27,7 @@ const voyClient = new VoyClient();
 const vectorstore = new VoyVectorStore(voyClient, embeddings);
 const ollama = new ChatOllama({
   baseUrl: "http://localhost:11435",
+  temperature: 1,
 });
 
 const REPHRASE_QUESTION_TEMPLATE = `Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
@@ -41,7 +42,7 @@ const rephraseQuestionChainPrompt = PromptTemplate.fromTemplate(
 );
 
 const RESPONSE_SYSTEM_TEMPLATE = `You are an experienced researcher, expert at interpreting and answering questions based on provided sources. Using the provided context, answer the user's question to the best of your ability using the resources provided.
-Generate a comprehensive and informative answer (but no more than 80 words) for a given question based solely on the provided search results (URL and content). You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text.
+Generate a concise answer for a given question based solely on the provided search results (URL and content). You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text.
 If there is nothing in the context relevant to the question at hand, just say "Hmm, I'm not sure." Don't try to make up an answer.
 Anything between the following \`context\` html blocks is retrieved from a knowledge bank, not part of the conversation with the user.
 <context>
@@ -50,7 +51,7 @@ Anything between the following \`context\` html blocks is retrieved from a knowl
 
 REMEMBER: If there is no relevant information within the context, just say "Hmm, I'm not sure." Don't try to make up an answer. Anything between the preceding 'context' html blocks is retrieved from a knowledge bank, not part of the conversation with the user.`;
 
-const responseChainPrompt = ChatPromptTemplate.fromPromptMessages<{
+const responseChainPrompt = ChatPromptTemplate.fromMessages<{
   context: string;
   chat_history: BaseMessage[];
   question: string;
@@ -141,7 +142,21 @@ const queryVectorStore = async (messages: ChatWindowMessage[]) => {
         (input) => input.chat_history,
         _formatChatHistoryAsMessages,
       ]),
-      context: retrievalChain,
+      context: RunnableSequence.from([
+        (input) => {
+          const formattedChatHistory = input.chat_history
+            .map(
+              (message: ChatWindowMessage) =>
+                `${message.role.toUpperCase()}: ${message.content}`,
+            )
+            .join("\n");
+          return {
+            question: input.question,
+            chat_history: formattedChatHistory,
+          };
+        },
+        retrievalChain,
+      ]),
     },
     responseChain,
   ]);
