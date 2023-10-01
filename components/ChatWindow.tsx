@@ -90,7 +90,7 @@ export function ChatWindow(props: {
       setMessages([...newMessages, aiResponseMessage]);
 
       while (!chunk.done) {
-        aiResponseMessage.content += chunk.value;
+        aiResponseMessage.content = (aiResponseMessage.content + chunk.value).trim();
         setMessages([...newMessages, aiResponseMessage]);
         chunk = await reader.read();
       }
