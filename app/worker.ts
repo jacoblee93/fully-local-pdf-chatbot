@@ -27,7 +27,7 @@ const voyClient = new VoyClient();
 const vectorstore = new VoyVectorStore(voyClient, embeddings);
 const ollama = new ChatOllama({
   baseUrl: "http://localhost:11435",
-  temperature: 1,
+  temperature: 0.3,
   model: "mistral",
 });
 
