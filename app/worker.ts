@@ -150,7 +150,7 @@ const queryVectorStore = async (messages: ChatWindowMessage[]) => {
     responseChain
   ]);
 
-  const stream = await fullChain.invoke({
+  const stream = await fullChain.stream({
     question: text,
     chat_history: chatHistory,
   });
