@@ -2987,7 +2987,7 @@ __metadata:
     encoding: ^0.1.13
     eslint: 8.46.0
     eslint-config-next: 13.4.12
-    langchain: ^0.0.152
+    langchain: ^0.0.156
     next: 13.4.12
     pdf-parse: ^1.1.1
     postcss: 8.4.27
@@ -3001,9 +3001,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"langchain@npm:^0.0.152":
-  version: 0.0.152
-  resolution: "langchain@npm:0.0.152"
+"langchain@npm:^0.0.156":
+  version: 0.0.156
+  resolution: "langchain@npm:0.0.156"
   dependencies:
     "@anthropic-ai/sdk": ^0.6.2
     ansi-styles: ^5.0.0
@@ -3036,11 +3036,9 @@ __metadata:
     "@aws-sdk/client-sagemaker-runtime": ^3.310.0
     "@aws-sdk/client-sfn": ^3.310.0
     "@aws-sdk/credential-provider-node": ^3.388.0
-    "@aws-sdk/protocol-http": ^3.374.0
-    "@aws-sdk/signature-v4": ^3.374.0
     "@azure/storage-blob": ^12.15.0
     "@clickhouse/client": ^0.0.14
-    "@cloudflare/workers-types": ^4.20230904.0
+    "@cloudflare/ai": ^1.0.12
     "@elastic/elasticsearch": ^8.4.0
     "@getmetal/metal-sdk": "*"
     "@getzep/zep-js": ^0.7.0
@@ -3056,6 +3054,8 @@ __metadata:
     "@qdrant/js-client-rest": ^1.2.0
     "@raycast/api": ^1.55.2
     "@smithy/eventstream-codec": ^2.0.5
+    "@smithy/protocol-http": ^3.0.6
+    "@smithy/signature-v4": ^2.0.10
     "@smithy/util-utf8": ^2.0.0
     "@supabase/postgrest-js": ^1.1.1
     "@supabase/supabase-js": ^2.10.0
@@ -3063,6 +3063,7 @@ __metadata:
     "@tensorflow/tfjs-converter": "*"
     "@tensorflow/tfjs-core": "*"
     "@upstash/redis": ^1.20.6
+    "@vercel/postgres": ^0.5.0
     "@writerai/writer-sdk": ^0.40.2
     "@xata.io/client": ^0.25.1
     "@xenova/transformers": ^2.5.4
@@ -3126,15 +3127,11 @@ __metadata:
       optional: true
     "@aws-sdk/credential-provider-node":
       optional: true
-    "@aws-sdk/protocol-http":
-      optional: true
-    "@aws-sdk/signature-v4":
-      optional: true
     "@azure/storage-blob":
       optional: true
     "@clickhouse/client":
       optional: true
-    "@cloudflare/workers-types":
+    "@cloudflare/ai":
       optional: true
     "@elastic/elasticsearch":
       optional: true
@@ -3166,6 +3163,10 @@ __metadata:
       optional: true
     "@smithy/eventstream-codec":
       optional: true
+    "@smithy/protocol-http":
+      optional: true
+    "@smithy/signature-v4":
+      optional: true
     "@smithy/util-utf8":
       optional: true
     "@supabase/postgrest-js":
@@ -3179,6 +3180,8 @@ __metadata:
     "@tensorflow/tfjs-core":
       optional: true
     "@upstash/redis":
+      optional: true
+    "@vercel/postgres":
       optional: true
     "@writerai/writer-sdk":
       optional: true
@@ -3272,7 +3275,7 @@ __metadata:
       optional: true
     youtubei.js:
       optional: true
-  checksum: 638d3cbf31ee71d9e1f39840a754ccfbf665597128ed783f1786533d669beac4d8c461981e9f6ee156c2cbcdda8984b9e2f680ff7c174d115b72c11c91521ac1
+  checksum: fdc4b0f31b19c276f7b7400ae9a09ab58b6d00ae49003d03e28a395151e942748dd2bcc2613c2b0486d23cf79b2066b1aa35e001f9107a5336461de6771f4960
   languageName: node
   linkType: hard
 

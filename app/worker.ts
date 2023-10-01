@@ -28,6 +28,7 @@ const vectorstore = new VoyVectorStore(voyClient, embeddings);
 const ollama = new ChatOllama({
   baseUrl: "http://localhost:11435",
   temperature: 1,
+  model: "mistral",
 });
 
 const REPHRASE_QUESTION_TEMPLATE = `Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
@@ -108,9 +109,7 @@ const embedPDF = async (pdfBlob: Blob) => {
   await vectorstore.addDocuments(splitDocs);
 };
 
-const _formatChatHistoryAsMessages = async (
-  chatHistory: ChatWindowMessage[],
-) => {
+const _formatChatHistoryAsMessages = async (chatHistory: ChatWindowMessage[]) => {
   return chatHistory.map((chatMessage) => {
     if (chatMessage.role === "human") {
       return new HumanMessage(chatMessage.content);
@@ -118,7 +117,7 @@ const _formatChatHistoryAsMessages = async (
       return new AIMessage(chatMessage.content);
     }
   });
-};
+}
 
 const queryVectorStore = async (messages: ChatWindowMessage[]) => {
   const text = messages[messages.length - 1].content;
@@ -138,30 +137,20 @@ const queryVectorStore = async (messages: ChatWindowMessage[]) => {
   const fullChain = RunnableSequence.from([
     {
       question: (input) => input.question,
-      chat_history: RunnableSequence.from([
-        (input) => input.chat_history,
-        _formatChatHistoryAsMessages,
-      ]),
-      context: RunnableSequence.from([
-        (input) => {
-          const formattedChatHistory = input.chat_history
-            .map(
-              (message: ChatWindowMessage) =>
-                `${message.role.toUpperCase()}: ${message.content}`,
-            )
-            .join("\n");
-          return {
-            question: input.question,
-            chat_history: formattedChatHistory,
-          };
-        },
-        retrievalChain,
-      ]),
+      chat_history: RunnableSequence.from([(input) => input.chat_history, _formatChatHistoryAsMessages]),
+      context: RunnableSequence.from([(input) => {
+        const formattedChatHistory = input.chat_history
+          .map((message: ChatWindowMessage) => `${message.role.toUpperCase()}: ${message.content}`).join('\n');
+        return {
+          question: input.question,
+          chat_history: formattedChatHistory,
+        };
+      }, retrievalChain]),
     },
-    responseChain,
+    responseChain
   ]);
 
-  const stream = await fullChain.stream({
+  const stream = await fullChain.invoke({
     question: text,
     chat_history: chatHistory,
   });

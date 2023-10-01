@@ -43,7 +43,7 @@ export function ChatWindow(props: {
             case "chunk":
               controller.enqueue(e.data.data);
               break;
-            case "error": 
+            case "error":
               worker.current?.removeEventListener("message", onMessageReceived);
               console.log(e.data.error);
               const error = new Error(e.data.error);
@@ -79,23 +79,23 @@ export function ChatWindow(props: {
     try {
       const stream = await queryStore(newMessages);
       const reader = stream.getReader();
-  
+
       let chunk = await reader.read();
-  
+
       const aiResponseMessage: ChatWindowMessage = {
         content: "",
         role: "ai" as const,
       };
-  
+
       setMessages([...newMessages, aiResponseMessage]);
-  
+
       while (!chunk.done) {
         aiResponseMessage.content += chunk.value;
         setMessages([...newMessages, aiResponseMessage]);
         chunk = await reader.read();
       }
-  
-      setIsLoading(false); 
+
+      setIsLoading(false);
     } catch (e: any) {
       setMessages(initialMessages);
       setIsLoading(false);
@@ -135,7 +135,7 @@ export function ChatWindow(props: {
         case "log":
           console.log(e.data);
           break;
-        case "error": 
+        case "error":
           worker.current?.removeEventListener("message", onMessageReceived);
           setIsLoading(false);
           console.log(e.data.error);
