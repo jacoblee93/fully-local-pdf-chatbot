@@ -84,7 +84,7 @@ export function ChatMessageBubble(props: { message: ChatWindowMessage, aiEmoji?:
           {prefix}
         </div>
         <div className="whitespace-pre-wrap">
-          {content}
+          {content.trim()}
         </div>
       </div>
       <div className={`${!runId ? "hidden" : ""} ml-auto mt-2`}>
