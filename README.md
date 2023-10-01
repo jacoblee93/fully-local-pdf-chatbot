@@ -10,7 +10,7 @@ performs RAG, all client side. You can even turn off your WiFi after the site lo
 You can see a live version at https://webml-demo.vercel.app.
 
 Users will need to download and set up [Ollama](https://ollama.ai), then run the following command to
-allow the site access to a locally running Llama 2 instance:
+allow the site access to a locally running Llama 2 or Mistral instance:
 
 ```bash
 $ OLLAMA_ORIGINS=https://webml-demo.vercel.app OLLAMA_HOST=127.0.0.1:11435 ollama serve
@@ -21,7 +21,7 @@ $ OLLAMA_ORIGINS=https://webml-demo.vercel.app OLLAMA_HOST=127.0.0.1:11435 ollam
 It uses the following:
 
 - [Voy](https://github.com/tantaraio/voy) as the vector store, fully WASM in the browser.
-- [Ollama](https://ollama.ai/) to run Llama 2 locally and expose it to the web app.
+- [Ollama](https://ollama.ai/) to run an LLM locally and expose it to the web app.
 - [LangChain.js](https://js.langchain.com) to call the models, perform retrieval, and generally orchestrate all the pieces.
 - [Transformers.js](https://huggingface.co/docs/transformers.js/index) to run embeddings in the browser.
 
