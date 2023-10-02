@@ -9,10 +9,11 @@ performs RAG, all client side. You can even turn off your WiFi after the site lo
 
 You can see a live version at https://webml-demo.vercel.app.
 
-Users will need to download and set up [Ollama](https://ollama.ai), then run the following command to
-allow the site access to a locally running Llama 2 or Mistral instance:
+Users will need to download and set up [Ollama](https://ollama.ai), then run the following commands to
+allow the site access to a locally running Mistral instance:
 
 ```bash
+$ ollama run mistral
 $ OLLAMA_ORIGINS=https://webml-demo.vercel.app OLLAMA_HOST=127.0.0.1:11435 ollama serve
 ```
 
