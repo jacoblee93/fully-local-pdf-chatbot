@@ -2,38 +2,48 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Background and Text */
 body {
-  color: #f8f8f8;
-  background: #131318;
+  color: #A4A48D; /* Earthy Green */
+  background: #4E4B37; /* Earthy Brown */
 }
 
+/* Input and Textarea */
 body input,
 body textarea {
-  color: black;
+  color: #2C2B26; /* Darker Earthy Brown */
 }
 
+/* Links */
 a {
-  color: #2d7bd4;
+  color: #6B8E23; /* Olive Green */
 }
 
 a:hover {
-  border-bottom: 1px solid;
+  border-bottom: 1px solid #A4A48D; /* Border with Earthy Green */
 }
 
+/* Paragraphs */
 p {
   margin: 8px 0;
+  color: #A4A48D; /* Earthy Green */
 }
 
+/* Code Elements */
 code,
 pre {
-  color: #ffa500;
+  color: #556B2F; /* Dark Olive Green */
 }
 
+/* Preformatted Text */
 pre {
-  background-color: black;
-  color: #39ff14;
+  background-color: #2E8B57; /* Sea Green */
+  color: #A4A48D; /* Earthy Green */
 }
 
+/* List Items */
 li {
   padding: 4px;
+  color: #A4A48D; /* Earthy Green */
 }
+
