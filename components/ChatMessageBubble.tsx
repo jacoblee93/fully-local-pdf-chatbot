@@ -15,7 +15,7 @@ export function ChatMessageBubble(props: { message: ChatWindowMessage, aiEmoji?:
     role === "human" ? "bg-sky-600" : "bg-slate-50 text-black";
   const alignmentClassName =
     role === "human" ? "ml-auto" : "mr-auto";
-  const prefix = role === "human" ? "🧑" : props.aiEmoji;
+  const prefix = role === "human" ? 
 
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
