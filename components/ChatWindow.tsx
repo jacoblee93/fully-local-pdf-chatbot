@@ -160,53 +160,34 @@ export function ChatWindow(props: {
     <>
       <div className="p-4 md:p-8 rounded bg-[#25252d] w-full max-h-[85%] overflow-hidden flex flex-col">
         <h1 className="text-3xl md:text-4xl mb-2 ml-auto mr-auto">
-          🏠 Fully Client-Side Chat Over Documents 🏠
+          ANIMA - Chat with you PDF
         </h1>
-        <h3 className="text-xl mb-4 ml-auto mr-auto">
-          <a target="_blank" href="https://github.com/tantaraio/voy">🦀 Voy</a> + <a target="_blank" href="https://ollama.ai/">🦙 Ollama</a> + <a target="_blank" href="https://js.langchain.com">🦜🔗 LangChain.js</a> + <a target="_blank" href="https://huggingface.co/docs/transformers.js/index">🤗 Transformers.js</a>
-        </h3>
+        
         <ul>
           <li className="text-l">
-            🏡
+            
             <span className="ml-2">
-              Yes, it&apos;s another chat over documents implementation... but this one is entirely local!
+              Harness ANIMA to chat with your PDF!
             </span>
           </li>
           <li className="hidden text-l md:block">
-            🌐
-            <span className="ml-2">
-              The vector store (<a target="_blank" href="https://github.com/tantaraio/voy">Voy</a>) and embeddings (<a target="_blank" href="https://huggingface.co/docs/transformers.js/index">Transformers.js</a>) are served via Vercel Edge function and run fully in the browser with no setup required.
-            </span>
+           
           </li>
           <li>
             ⚙️
             <span className="ml-2">
               The default LLM is Llama 2 run locally by Ollama. You&apos;ll need to install <a target="_blank" href="https://ollama.ai">the Ollama desktop app</a> and run the following commands to give this site access to the locally running model:
               <br/>
-              <pre className="inline-flex px-2 py-1 my-2 rounded">$ ollama run mistral
+              <pre className="inline-flex px-2 py-1 my-2 rounded">$ ollama run severian/anima
               <br/>
-              $ OLLAMA_ORIGINS=https://webml-demo.vercel.app OLLAMA_HOST=127.0.0.1:11435 ollama serve</pre>
+              $ OLLAMA_ORIGINS=https://https://anima-local-pdf-chatbot.vercel.app OLLAMA_HOST=127.0.0.1:11435 ollama serve</pre>
             </span>
           </li>
           <li className="hidden text-l md:block">
-            🦜
-            <span className="ml-2">
-              And finally, <a target="_blank" href="https://js.langchain.com">LangChain.js</a> handles orchestration and tying everything together!
-            </span>
+           
           </li>
           <li className="text-l">
-            🐙
-            <span className="ml-2">
-              This template is open source - you can see the source code and
-              deploy your own version{" "}
-              <a
-                href="https://github.com/jacoblee93/fully-local-pdf-chatbot"
-                target="_blank"
-              >
-                from the GitHub repo
-              </a>
-              !
-            </span>
+         
           </li>
           <li className="text-l">
             👇
