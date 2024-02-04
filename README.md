@@ -40,7 +40,7 @@ There are no required environment variables!
 
 ## 📖 Further reading
 
-For a bit more on this topic, check out [my blog post on Ollama](https://ollama.ai/blog/building-llm-powered-web-apps) or the [my Google Summit talk on building with LLMs in the browser](https://www.youtube.com/watch?v=-1sdWLr3TbI).
+For a bit more on this topic, check out [my blog post on Ollama](https://ollama.ai/blog/building-llm-powered-web-apps) or [my Google Summit talk on building with LLMs in the browser](https://www.youtube.com/watch?v=-1sdWLr3TbI).
 
 ## 🙏 Thank you!
 
