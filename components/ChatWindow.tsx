@@ -181,7 +181,7 @@ export function ChatWindow(props: {
           <li>
             ⚙️
             <span className="ml-2">
-              The default LLM is Llama 2 run locally by Ollama. You&apos;ll need to install <a target="_blank" href="https://ollama.ai">the Ollama desktop app</a> and run the following commands to give this site access to the locally running model:
+              The default LLM is Mistral run locally by Ollama. You&apos;ll need to install <a target="_blank" href="https://ollama.ai">the Ollama desktop app</a> and run the following commands to give this site access to the locally running model:
               <br/>
               <pre className="inline-flex px-2 py-1 my-2 rounded">$ OLLAMA_ORIGINS=https://webml-demo.vercel.app OLLAMA_HOST=127.0.0.1:11435 ollama serve
               </pre>
@@ -189,6 +189,12 @@ export function ChatWindow(props: {
               Then, in another window:
               <br/>
               <pre className="inline-flex px-2 py-1 my-2 rounded">$ OLLAMA_HOST=127.0.0.1:11435 ollama pull mistral</pre>
+            </span>
+          </li>
+          <li>
+            🗺️
+            <span className="ml-2">
+              The default embeddings are <a href="https://nomic.ai">Nomic Embed v1</a>.
             </span>
           </li>
           <li className="hidden text-l md:block">

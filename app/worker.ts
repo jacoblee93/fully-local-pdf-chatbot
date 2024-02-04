@@ -2,25 +2,31 @@ import { ChatWindowMessage } from "@/schema/ChatWindowMessage";
 
 import { Voy as VoyClient } from "voy-search";
 
+import { createRetrievalChain } from "langchain/chains/retrieval";
+import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
+import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retriever";
+
 import { WebPDFLoader } from "langchain/document_loaders/web/pdf";
-import { HuggingFaceTransformersEmbeddings } from "langchain/embeddings/hf_transformers";
-import { VoyVectorStore } from "langchain/vectorstores/voy";
-import { ChatOllama } from "langchain/chat_models/ollama";
-import { Document } from "langchain/document";
+
+import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
+import { VoyVectorStore } from "@langchain/community/vectorstores/voy";
+import { ChatOllama } from "@langchain/community/chat_models/ollama";
 import {
   ChatPromptTemplate,
   MessagesPlaceholder,
   PromptTemplate,
-} from "langchain/prompts";
-import { BaseLanguageModel } from "langchain/base_language";
-import { BaseRetriever } from "langchain/schema/retriever";
-import { RunnableSequence } from "langchain/schema/runnable";
-import { StringOutputParser } from "langchain/schema/output_parser";
-import { AIMessage, BaseMessage, HumanMessage } from "langchain/schema";
+} from "@langchain/core/prompts";
+import { RunnableSequence, RunnablePick } from "@langchain/core/runnables";
+import {
+  AIMessage,
+  type BaseMessage,
+  HumanMessage,
+} from "@langchain/core/messages";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 
 const embeddings = new HuggingFaceTransformersEmbeddings({
-  modelName: "Xenova/all-MiniLM-L6-v2",
+  modelName: "nomic-ai/nomic-embed-text-v1",
+  // Can use "Xenova/all-MiniLM-L6-v2" for less powerful but faster embeddings
 });
 
 const voyClient = new VoyClient();
@@ -30,17 +36,6 @@ const ollama = new ChatOllama({
   temperature: 0.3,
   model: "mistral",
 });
-
-const REPHRASE_QUESTION_TEMPLATE = `Given the following conversation and a follow up question, rephrase the follow up question to be a standalone question.
-
-Chat History:
-{chat_history}
-Follow Up Input: {question}
-Standalone Question:`;
-
-const rephraseQuestionChainPrompt = PromptTemplate.fromTemplate(
-  REPHRASE_QUESTION_TEMPLATE,
-);
 
 const RESPONSE_SYSTEM_TEMPLATE = `You are an experienced researcher, expert at interpreting and answering questions based on provided sources. Using the provided context, answer the user's question to the best of your ability using the resources provided.
 Generate a concise answer for a given question based solely on the provided search results (URL and content). You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text.
@@ -59,39 +54,11 @@ const responseChainPrompt = ChatPromptTemplate.fromMessages<{
 }>([
   ["system", RESPONSE_SYSTEM_TEMPLATE],
   new MessagesPlaceholder("chat_history"),
-  ["user", `{question}`],
+  ["user", `{input}`],
 ]);
 
-const formatDocs = (docs: Document[]) => {
-  return docs
-    .map((doc, i) => `<doc id='${i}'>${doc.pageContent}</doc>`)
-    .join("\n");
-};
-
-const createRetrievalChain = (
-  llm: BaseLanguageModel,
-  retriever: BaseRetriever,
-  chatHistory: ChatWindowMessage[],
-) => {
-  if (chatHistory.length) {
-    return RunnableSequence.from([
-      rephraseQuestionChainPrompt,
-      llm,
-      new StringOutputParser(),
-      retriever,
-      formatDocs,
-    ]);
-  } else {
-    return RunnableSequence.from([
-      (input) => input.question,
-      retriever,
-      formatDocs,
-    ]);
-  }
-};
-
 const embedPDF = async (pdfBlob: Blob) => {
-  const pdfLoader = new WebPDFLoader(pdfBlob);
+  const pdfLoader = new WebPDFLoader(pdfBlob, { parsedItemSeparator: " " });
   const docs = await pdfLoader.load();
 
   const splitter = new RecursiveCharacterTextSplitter({
@@ -123,47 +90,43 @@ const _formatChatHistoryAsMessages = async (
 
 const queryVectorStore = async (messages: ChatWindowMessage[]) => {
   const text = messages[messages.length - 1].content;
-  const chatHistory: ChatWindowMessage[] = messages.slice(0, -1);
+  const chatHistory = await _formatChatHistoryAsMessages(messages.slice(0, -1));
 
-  const retrievalChain = createRetrievalChain(
-    ollama,
-    vectorstore.asRetriever(),
-    chatHistory,
-  );
-  const responseChain = RunnableSequence.from([
-    responseChainPrompt,
-    ollama,
-    new StringOutputParser(),
+  const documentChain = await createStuffDocumentsChain({
+    llm: ollama,
+    prompt: responseChainPrompt,
+    documentPrompt: PromptTemplate.fromTemplate(
+      `<doc>\n{page_content}\n</doc>`,
+    ),
+  });
+
+  const historyAwarePrompt = ChatPromptTemplate.fromMessages([
+    new MessagesPlaceholder("chat_history"),
+    ["user", "{input}"],
+    [
+      "user",
+      "Given the above conversation, generate a natural language search query to look up in order to get information relevant to the conversation. Do not respond with anything except the query.",
+    ],
   ]);
 
+  const historyAwareRetrieverChain = await createHistoryAwareRetriever({
+    llm: ollama,
+    retriever: vectorstore.asRetriever(),
+    rephrasePrompt: historyAwarePrompt,
+  });
+
+  const retrievalChain = await createRetrievalChain({
+    combineDocsChain: documentChain,
+    retriever: historyAwareRetrieverChain,
+  });
+
   const fullChain = RunnableSequence.from([
-    {
-      question: (input) => input.question,
-      chat_history: RunnableSequence.from([
-        (input) => input.chat_history,
-        _formatChatHistoryAsMessages,
-      ]),
-      context: RunnableSequence.from([
-        (input) => {
-          const formattedChatHistory = input.chat_history
-            .map(
-              (message: ChatWindowMessage) =>
-                `${message.role.toUpperCase()}: ${message.content}`,
-            )
-            .join("\n");
-          return {
-            question: input.question,
-            chat_history: formattedChatHistory,
-          };
-        },
-        retrievalChain,
-      ]),
-    },
-    responseChain,
+    retrievalChain,
+    new RunnablePick("answer"),
   ]);
 
   const stream = await fullChain.stream({
-    question: text,
+    input: text,
     chat_history: chatHistory,
   });
 
