@@ -29,6 +29,7 @@ It uses the following:
 - [Ollama](https://ollama.ai/) to run an LLM locally and expose it to the web app.
 - [LangChain.js](https://js.langchain.com) to call the models, perform retrieval, and generally orchestrate all the pieces.
 - [Transformers.js](https://huggingface.co/docs/transformers.js/index) to run open source [Nomic](https://www.nomic.ai/) embeddings in the browser.
+  - For more speed on some machines, switch to `"Xenova/all-MiniLM-L6-v2"` in `app/worker.ts`.
 
 I wanted to run as much of the app as possible directly in the browser, but you can swap in [Ollama embeddings](https://js.langchain.com/docs/modules/data_connection/text_embedding/integrations/ollama) as well.
 
