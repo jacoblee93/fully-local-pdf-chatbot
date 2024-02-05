@@ -194,7 +194,7 @@ export function ChatWindow(props: {
           <li>
             🗺️
             <span className="ml-2">
-              The default embeddings are <a href="https://nomic.ai">Nomic Embed v1</a>. For more speed on some machines, switch to <pre className="inline-flex px-2 py-1 my-2 rounded">"Xenova/all-MiniLM-L6-v2"</pre> in <pre className="inline-flex px-2 py-1 my-2 rounded">app/worker.ts</pre>.
+              The default embeddings are <a href="https://nomic.ai">Nomic Embed v1</a>. For more speed on some machines, switch to <pre className="inline-flex px-2 py-1 my-2 rounded">&quot;Xenova/all-MiniLM-L6-v2&quot;</pre> in <pre className="inline-flex px-2 py-1 my-2 rounded">app/worker.ts</pre>.
             </span>
           </li>
           <li className="hidden text-l md:block">
