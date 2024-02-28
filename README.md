@@ -12,6 +12,8 @@ You can see a live version at https://webml-demo.vercel.app.
 Users will need to download and set up [Ollama](https://ollama.ai), then run the following commands to
 allow the site access to a locally running Mistral instance:
 
+## Linux
+
 ```bash
 $ OLLAMA_ORIGINS=https://webml-demo.vercel.app OLLAMA_HOST=127.0.0.1:11435 ollama serve
 ```
@@ -19,6 +21,20 @@ Then, in another terminal window:
 
 ```bash
 $ OLLAMA_HOST=127.0.0.1:11435 ollama pull mistral
+```
+
+## Windows CMD
+
+```cmd
+$ set OLLAMA_ORIGINS=https://webml-demo.vercel.app
+set OLLAMA_HOST=127.0.0.1:11435
+ollama serve
+```
+Then, in another terminal window:
+
+```cmd
+$ set OLLAMA_HOST=127.0.0.1:11435
+ollama pull mistral
 ```
 
 ## ⚡ Stack
