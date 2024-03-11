@@ -13,11 +13,13 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@langchain/community": "^0.0.26",
+    "@ai-mask/sdk": "^0.6.0",
+    "@langchain/community": "^0.0.28",
+    "@mlc-ai/web-llm": "^0.2.18",
     "@types/node": "20.4.5",
     "@types/react": "18.2.17",
     "@types/react-dom": "18.2.7",
-    "@xenova/transformers": "^2.14.2",
+    "@xenova/transformers": "^2.16.0",
     "autoprefixer": "10.4.14",
     "encoding": "^0.1.13",
     "eslint": "8.46.0",
@@ -31,7 +33,7 @@
     "react-toastify": "^9.1.3",
     "tailwindcss": "3.3.3",
     "typescript": "5.1.6",
-    "voy-search": "^0.6.3"
+    "voy-search": "^0.6.2"
   },
   "devDependencies": {
     "prettier": "3.0.0"
