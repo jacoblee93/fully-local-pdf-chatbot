@@ -66,6 +66,7 @@ export class ChatBot {
   chatWebLLM: ChatAIMask
 
   constructor() {
+    console.log('chatbot')
 
     const embeddings = new HuggingFaceTransformersEmbeddings({
       modelName: "nomic-ai/nomic-embed-text-v1",
@@ -75,7 +76,7 @@ export class ChatBot {
     const voyClient = new VoyClient();
     this.vectorstore = new VoyVectorStore(voyClient, embeddings);
     this.chatWebLLM = new ChatAIMask({
-      modelId: 'gemma-2b-it-q4f32_1'
+      modelId: 'Mistral-7B-Instruct-v0.2-q4f16_1'
     });
 
   }

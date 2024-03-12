@@ -9,7 +9,7 @@ import type { FormEvent } from "react";
 import { ChatMessageBubble } from "@/components/ChatMessageBubble";
 import { ChatWindowMessage } from '@/schema/ChatWindowMessage';
 
-import { ChatBot } from '../lib/chatbot'
+import type { ChatBot } from '../lib/chatbot'
 
 export function ChatWindow(props: {
   placeholder?: string,
@@ -26,7 +26,10 @@ export function ChatWindow(props: {
 
   useEffect(() => {
     if (!chatbot.current) {
-      chatbot.current = new ChatBot()
+      // force module loading on client side only
+      import('../lib/chatbot').then(({ ChatBot }) =>
+        chatbot.current = new ChatBot()
+      )
       setIsLoading(false);
     }
   }, []);

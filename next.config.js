@@ -4,9 +4,6 @@ const nextConfig = {
   // See https://nextjs.org/docs/pages/building-your-application/deploying/static-exports#configuration
   output: 'export', // Feel free to modify/remove this option
 
-  experimental: {
-    serverComponentsExternalPackages: ['sharp', 'onnxruntime-node'],
-  },
   // Override the default webpack configuration
   webpack: (config, { isServer }) => {
     // See https://webpack.js.org/configuration/resolve/#resolvealias
@@ -35,6 +32,8 @@ const nextConfig = {
         perf_hooks: false,
       };
     }
+
+
     return config;
   },
 }

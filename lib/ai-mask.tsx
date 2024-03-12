@@ -10,8 +10,7 @@ import {
     ChatMessage,
 } from "@langchain/core/messages";
 import { ChatGenerationChunk } from "@langchain/core/outputs";
-import { ChatWorkerHandler, ChatModule } from "@mlc-ai/web-llm";
-import { AIMaskClient, Model } from '@ai-mask/sdk';
+import { AIMaskClient, ChatCompletionMessageParam } from '@ai-mask/sdk';
 
 /**
  * Note that the modelPath is the only required parameter. For testing you
@@ -23,6 +22,29 @@ export interface WebLLMInputs
 }
 
 export interface WebLLMCallOptions extends BaseLanguageModelCallOptions {
+}
+
+function convertMessages(messages: BaseMessage[]): ChatCompletionMessageParam[] {
+    return messages.map((message) => {
+        let role: ChatCompletionMessageParam['role'], content: ChatCompletionMessageParam['content'];
+        if (message._getType() === "human") {
+            role = "user";
+        } else if (message._getType() === "ai") {
+            role = "assistant";
+        } else if (message._getType() === "system") {
+            role = "system";
+        } else {
+            throw new Error(
+                `Unsupported message type for Ollama: ${message._getType()}`
+            );
+        }
+        if (typeof message.content === "string") {
+            content = message.content;
+        } else {
+            throw new Error('unsopported content type')
+        }
+        return { role, content }
+    })
 }
 
 /**
@@ -49,7 +71,6 @@ export interface WebLLMCallOptions extends BaseLanguageModelCallOptions {
 export class ChatAIMask extends SimpleChatModel<WebLLMCallOptions> {
     static inputs: WebLLMInputs;
 
-    _chatModule: ChatModule;
     _aiMaskClient: AIMaskClient;
     modelId: string;
 
@@ -60,10 +81,8 @@ export class ChatAIMask extends SimpleChatModel<WebLLMCallOptions> {
     constructor(inputs: WebLLMInputs) {
         super(inputs);
 
-        this._chatModule = new ChatModule();
-
         if (!AIMaskClient.isExtensionAvailable()) {
-            //throw new Error('AI Mask extension is not available')
+            throw new Error('AI Mask extension is not available')
         }
         this._aiMaskClient = new AIMaskClient({ name: 'fully-local-pdf-chatbot' })
         this.modelId = inputs.modelId
@@ -88,8 +107,6 @@ export class ChatAIMask extends SimpleChatModel<WebLLMCallOptions> {
         messages: BaseMessage[],
         options: this["ParsedCallOptions"]
     ): Promise<string> {
-        await this._chatModule.reload("Llama-2-7b-chat-hf-q4f32_1");
-
         console.log(messages)
 
         const lastMessage = messages[messages.length - 1]
@@ -101,10 +118,7 @@ export class ChatAIMask extends SimpleChatModel<WebLLMCallOptions> {
 
         try {
             const completion = await this._aiMaskClient.chat(this.modelId, {
-                messages: messages.map(m => ({
-                    content: typeof m.content === "string" ? m.content : '',
-                    role: 'assistant',
-                })),
+                messages: convertMessages(messages),
             })
             return completion;
         } catch (e) {
