@@ -32,8 +32,6 @@ const nextConfig = {
         perf_hooks: false,
       };
     }
-
-
     return config;
   },
 }

@@ -66,7 +66,6 @@ export class ChatBot {
   chatWebLLM: ChatAIMask
 
   constructor() {
-    console.log('chatbot')
 
     const embeddings = new HuggingFaceTransformersEmbeddings({
       modelName: "nomic-ai/nomic-embed-text-v1",

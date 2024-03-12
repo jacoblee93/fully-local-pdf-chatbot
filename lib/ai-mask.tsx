@@ -3,25 +3,21 @@ import {
     type BaseChatModelParams,
 } from "@langchain/core/language_models/chat_models";
 import type { BaseLanguageModelCallOptions } from "@langchain/core/language_models/base";
-import { CallbackManagerForLLMRun } from "@langchain/core/callbacks/manager";
 import {
     BaseMessage,
-    AIMessageChunk,
-    ChatMessage,
 } from "@langchain/core/messages";
-import { ChatGenerationChunk } from "@langchain/core/outputs";
 import { AIMaskClient, ChatCompletionMessageParam } from '@ai-mask/sdk';
 
 /**
  * Note that the modelPath is the only required parameter. For testing you
  * can set this in the environment variable `LLAMA_PATH`.
  */
-export interface WebLLMInputs
+export interface AIMaskInputs
     extends BaseChatModelParams {
     modelId: string
 }
 
-export interface WebLLMCallOptions extends BaseLanguageModelCallOptions {
+export interface AIMaskCallOptions extends BaseLanguageModelCallOptions {
 }
 
 function convertMessages(messages: BaseMessage[]): ChatCompletionMessageParam[] {
@@ -41,21 +37,19 @@ function convertMessages(messages: BaseMessage[]): ChatCompletionMessageParam[] 
         if (typeof message.content === "string") {
             content = message.content;
         } else {
-            throw new Error('unsopported content type')
+            throw new Error('unsupported content type')
         }
         return { role, content }
     })
 }
 
 /**
- *  To use this model you need to have the `@mlc-ai/web-llm` module installed.
  *  This can be installed using `npm install -S @mlc-ai/web-llm` 
  * @example
  * ```typescript
- * // Initialize the ChatWebLLM model with the path to the model binary file.
- * const model = new ChatWebLLM({
- *   modelPath: "/Replace/with/path/to/your/model/gguf-llama2-q4_0.bin",
- *   temperature: 0.5,
+ * // Initialize the ChatAIMask model with the path to the model binary file.
+ * const model = new ChatAIMask({
+ *   modelId: "Mistral-7B-Instruct-v0.2-q4f16_1",
  * });
  *
  * // Call the model with a message and await the response.
@@ -68,8 +62,8 @@ function convertMessages(messages: BaseMessage[]): ChatCompletionMessageParam[] 
  *
  * ```
  */
-export class ChatAIMask extends SimpleChatModel<WebLLMCallOptions> {
-    static inputs: WebLLMInputs;
+export class ChatAIMask extends SimpleChatModel<AIMaskCallOptions> {
+    static inputs: AIMaskInputs;
 
     _aiMaskClient: AIMaskClient;
     modelId: string;
@@ -78,7 +72,7 @@ export class ChatAIMask extends SimpleChatModel<WebLLMCallOptions> {
         return "ChatAIMask";
     }
 
-    constructor(inputs: WebLLMInputs) {
+    constructor(inputs: AIMaskInputs) {
         super(inputs);
 
         if (!AIMaskClient.isExtensionAvailable()) {
