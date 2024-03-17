@@ -93,7 +93,10 @@ const _formatChatHistoryAsMessages = async (
   });
 };
 
-const queryVectorStore = async (messages: ChatWindowMessage[], devModeTracer?: LangChainTracer) => {
+const queryVectorStore = async (
+  messages: ChatWindowMessage[],
+  devModeTracer?: LangChainTracer,
+) => {
   const text = messages[messages.length - 1].content;
   const chatHistory = await _formatChatHistoryAsMessages(messages.slice(0, -1));
 
@@ -130,12 +133,15 @@ const queryVectorStore = async (messages: ChatWindowMessage[], devModeTracer?: L
     new RunnablePick("answer"),
   ]);
 
-  const stream = await fullChain.stream({
-    input: text,
-    chat_history: chatHistory,
-  }, {
-    callbacks: devModeTracer !== undefined ? [devModeTracer] : []
-  });
+  const stream = await fullChain.stream(
+    {
+      input: text,
+      chat_history: chatHistory,
+    },
+    {
+      callbacks: devModeTracer !== undefined ? [devModeTracer] : [],
+    },
+  );
 
   for await (const chunk of stream) {
     if (chunk) {
@@ -168,7 +174,7 @@ self.addEventListener("message", async (event: { data: any }) => {
       projectName: event.data.DEV_LANGCHAIN_TRACING.LANGCHAIN_PROJECT,
       client: new Client({
         apiKey: event.data.DEV_LANGCHAIN_TRACING.LANGCHAIN_API_KEY,
-      })
+      }),
     });
   }
 

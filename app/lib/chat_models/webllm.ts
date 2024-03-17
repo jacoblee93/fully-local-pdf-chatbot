@@ -4,10 +4,7 @@ import {
 } from "@langchain/core/language_models/chat_models";
 import type { BaseLanguageModelCallOptions } from "@langchain/core/language_models/base";
 import { CallbackManagerForLLMRun } from "@langchain/core/callbacks/manager";
-import {
-  BaseMessage,
-  AIMessageChunk,
-} from "@langchain/core/messages";
+import { BaseMessage, AIMessageChunk } from "@langchain/core/messages";
 import { ChatGenerationChunk } from "@langchain/core/outputs";
 import { ChatModule, ChatCompletionMessageParam } from "@mlc-ai/web-llm";
 
@@ -57,52 +54,63 @@ export class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
   _llmType() {
     return "web-llm";
   }
-  
+
   async *_streamResponseChunks(
     messages: BaseMessage[],
     _options: this["ParsedCallOptions"],
-    runManager?: CallbackManagerForLLMRun | undefined
+    runManager?: CallbackManagerForLLMRun | undefined,
   ): AsyncGenerator<ChatGenerationChunk> {
     // Config copied from:
     // https://github.com/mlc-ai/web-llm/blob/eaaff6a7730b6403810bb4fd2bbc4af113c36050/examples/simple-chat/src/gh-config.js
     await this._chatModule.reload("gemma-2b-it-q4f16_1", undefined, {
-      model_list: [{
-        "model_url": "https://huggingface.co/mlc-ai/gemma-2b-it-q4f16_1-MLC/resolve/main/",
-        "local_id": "gemma-2b-it-q4f16_1",
-        "model_lib_url": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/gemma-2b-it/gemma-2b-it-q4f16_1-ctx4k_cs1k-webgpu.wasm",
-        "vram_required_MB": 1476.52,
-        "low_resource_required": false,
-        "buffer_size_required_bytes": 262144000,
-        "required_features": ["shader-f16"],
-      }]
+      model_list: [
+        {
+          model_url:
+            "https://huggingface.co/mlc-ai/gemma-2b-it-q4f16_1-MLC/resolve/main/",
+          local_id: "gemma-2b-it-q4f16_1",
+          model_lib_url:
+            "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/gemma-2b-it/gemma-2b-it-q4f16_1-ctx4k_cs1k-webgpu.wasm",
+          vram_required_MB: 1476.52,
+          low_resource_required: false,
+          buffer_size_required_bytes: 262144000,
+          required_features: ["shader-f16"],
+        },
+      ],
     });
 
-    const messagesInput: ChatCompletionMessageParam[] = messages.map((message) => {
-      if (typeof message.content !== "string") {
-        throw new Error(
-          "ChatWebLLM does not support non-string message content in sessions.",
-        );
-      }
-      const langChainType = message._getType();
-      let role;
-      if (langChainType === "ai") {
-        role = "assistant" as const;
-      } else if (langChainType === "human") {
-        role = "user" as const;
-      } else if (langChainType === "system") {
-        role = "system" as const;
-      } else {
-        throw new Error("Function, tool, and generic messages are not supported.");
-      }
-      return {
-        role,
-        content: message.content,
-      };
-    });
-    const stream = this._chatModule.chatCompletionAsyncChunkGenerator({
-      stream: true,
-      messages: messagesInput,
-    }, {});
+    const messagesInput: ChatCompletionMessageParam[] = messages.map(
+      (message) => {
+        if (typeof message.content !== "string") {
+          throw new Error(
+            "ChatWebLLM does not support non-string message content in sessions.",
+          );
+        }
+        const langChainType = message._getType();
+        let role;
+        if (langChainType === "ai") {
+          role = "assistant" as const;
+        } else if (langChainType === "human") {
+          role = "user" as const;
+        } else if (langChainType === "system") {
+          role = "system" as const;
+        } else {
+          throw new Error(
+            "Function, tool, and generic messages are not supported.",
+          );
+        }
+        return {
+          role,
+          content: message.content,
+        };
+      },
+    );
+    const stream = this._chatModule.chatCompletionAsyncChunkGenerator(
+      {
+        stream: true,
+        messages: messagesInput,
+      },
+      {},
+    );
     for await (const chunk of stream) {
       const text = chunk.choices[0].delta.content ?? "";
       yield new ChatGenerationChunk({
@@ -110,8 +118,8 @@ export class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
         message: new AIMessageChunk({
           content: text,
           additional_kwargs: {
-            logprobs: chunk.choices[0].logprobs
-          }
+            logprobs: chunk.choices[0].logprobs,
+          },
         }),
       });
       await runManager?.handleLLMNewToken(text ?? "");
@@ -121,13 +129,13 @@ export class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
   async _call(
     messages: BaseMessage[],
     options: this["ParsedCallOptions"],
-    runManager?: CallbackManagerForLLMRun
+    runManager?: CallbackManagerForLLMRun,
   ): Promise<string> {
     const chunks = [];
     for await (const chunk of this._streamResponseChunks(
       messages,
       options,
-      runManager
+      runManager,
     )) {
       chunks.push(chunk.text);
     }
