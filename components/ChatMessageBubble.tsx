@@ -8,7 +8,11 @@ import { ChatWindowMessage } from '@/schema/ChatWindowMessage';
 import { useState, type FormEvent } from "react";
 import { Feedback } from 'langsmith';
 
-export function ChatMessageBubble(props: { message: ChatWindowMessage, aiEmoji?: string }) {
+export function ChatMessageBubble(props: {
+  message: ChatWindowMessage;
+  aiEmoji?: string;
+  onRemovePressed?: () => void;
+}) {
   const { role, content, runId } = props.message;
 
   const colorClassName =
@@ -79,12 +83,16 @@ export function ChatMessageBubble(props: { message: ChatWindowMessage, aiEmoji?:
     <div
       className={`${alignmentClassName} ${colorClassName} rounded px-4 py-2 max-w-[80%] mb-8 flex flex-col`}
     >
-      <div className="flex">
+      <div className="flex hover:group group">
         <div className="mr-2">
           {prefix}
         </div>
         <div className="whitespace-pre-wrap">
-          {content.trim()}
+          {/* TODO: Remove. Hacky fix, stop sequences don't seem to work with WebLLM yet. */}
+          {content.trim().split("\nInstruct:")[0].split("\nInstruction:")[0]}
+        </div>
+        <div className="cursor-pointer opacity-0 hover:opacity-100 relative left-2 bottom-1" onMouseUp={props?.onRemovePressed}>
+          ✖️
         </div>
       </div>
       <div className={`${!runId ? "hidden" : ""} ml-auto mt-2`}>

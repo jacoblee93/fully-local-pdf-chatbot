@@ -1,6 +1,6 @@
 "use client";
 
-import { ToastContainer, toast } from 'react-toastify';
+import { Id, ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 import { useRef, useState, useEffect } from "react";
@@ -10,16 +10,18 @@ import { ChatMessageBubble } from "@/components/ChatMessageBubble";
 import { ChatWindowMessage } from '@/schema/ChatWindowMessage';
 
 export function ChatWindow(props: {
-  placeholder?: string,
-  titleText?: string,
-  emoji?: string;
+  placeholder?: string;
 }) {
-  const { placeholder, titleText = "An LLM", emoji } = props;
+  const { placeholder } = props;
   const [messages, setMessages] = useState<ChatWindowMessage[]>([]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPDF, setSelectedPDF] = useState<File | null>(null);
   const [readyToChat, setReadyToChat] = useState(false);
+  const [browserOnly, setBrowserOnly] = useState(false);
+  const initProgressToastId = useRef<Id | null>(null);
+  const titleText = browserOnly ? "Fully In-Browser Chat Over Documents" : "Fully Local Chat Over Documents";
+  const emoji = browserOnly ? "🏠" : "🦙";
 
   const worker = useRef<Worker | null>(null);
 
@@ -27,19 +29,76 @@ export function ChatWindow(props: {
     if (!worker.current) {
       throw new Error("Worker is not ready.");
     }
-
     return new ReadableStream({
       start(controller) {
         if (!worker.current) {
           controller.close();
           return;
         }
-        worker.current?.postMessage({ messages });
-        const onMessageReceived = (e: any) => {
+        // Config copied from:
+        // https://github.com/mlc-ai/web-llm/blob/eaaff6a7730b6403810bb4fd2bbc4af113c36050/examples/simple-chat/src/gh-config.js
+        const webLLMConfig = {
+          modelRecord: {
+            "model_url": "https://huggingface.co/mlc-ai/phi-2-q4f32_1-MLC/resolve/main/",
+            "local_id": "Phi2-q4f32_1",
+            "model_lib_url": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/phi-2/phi-2-q4f32_1-ctx2k-webgpu.wasm",
+            "vram_required_MB": 4032.48,
+            "low_resource_required": false,
+          },
+          // {
+          //   "model_url": "https://huggingface.co/mlc-ai/phi-2-q0f16-MLC/resolve/main/",
+          //   "local_id": "Phi2-q0f16",
+          //   "model_lib_url": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/phi-2/phi-2-q0f16-ctx2k-webgpu.wasm",
+          //   "vram_required_MB": 11079.47,
+          //   "low_resource_required": false,
+          //   "required_features": ["shader-f16"],
+          // },
+        };
+        const ollamaConfig = {
+          baseUrl: "http://localhost:11435",
+          temperature: 0.3,
+          model: "mistral",
+        };
+        const payload: Record<string, any> = {
+          messages,
+          modelProvider: browserOnly ? "webllm" : "ollama",
+          modelConfig: browserOnly ? webLLMConfig : ollamaConfig,
+        };
+        if (
+          process.env.NEXT_PUBLIC_LANGCHAIN_TRACING_V2 === "true" &&
+          process.env.NEXT_PUBLIC_LANGCHAIN_API_KEY !== undefined
+        ) {
+          console.warn(
+            "[WARNING]: You have set your LangChain API key publicly. This should only be done in local devlopment - remember to remove it before deploying!"
+          );
+          payload.DEV_LANGCHAIN_TRACING = {
+            LANGCHAIN_TRACING_V2: "true",
+            LANGCHAIN_API_KEY: process.env.NEXT_PUBLIC_LANGCHAIN_API_KEY,
+            LANGCHAIN_PROJECT: process.env.NEXT_PUBLIC_LANGCHAIN_PROJECT,
+          };
+        }
+        worker.current?.postMessage(payload);
+        const onMessageReceived = async (e: any) => {
           switch (e.data.type) {
             case "log":
               console.log(e.data);
               break;
+            case "init_progress":
+              if (initProgressToastId.current === null) {
+                initProgressToastId.current = toast(
+                  "Loading model weights... This may take a while",
+                  {
+                    progress: e.data.data.progress,
+                    theme: "dark"
+                  }
+                );
+              } else {
+                if (e.data.data.progress === 1) {
+                  await new Promise((resolve) => setTimeout(resolve, 2000));
+                }
+                toast.update(initProgressToastId.current, { progress: e.data.data.progress });
+              }
+              break
             case "chunk":
               controller.enqueue(e.data.data);
               break;
@@ -160,16 +219,19 @@ export function ChatWindow(props: {
     <>
       <div className="p-4 md:p-8 rounded bg-[#25252d] w-full max-h-[85%] overflow-hidden flex flex-col">
         <h1 className="text-3xl md:text-4xl mb-2 ml-auto mr-auto">
-          🏠 Fully Client-Side Chat Over Documents 🏠
+          {emoji} Fully {browserOnly ? "In-Browser" : "Client-Side"} Chat Over Documents {emoji}
         </h1>
-        <h3 className="text-xl mb-4 ml-auto mr-auto">
-          <a target="_blank" href="https://github.com/tantaraio/voy">🦀 Voy</a> + <a target="_blank" href="https://ollama.ai/">🦙 Ollama</a> + <a target="_blank" href="https://js.langchain.com">🦜🔗 LangChain.js</a> + <a target="_blank" href="https://huggingface.co/docs/transformers.js/index">🤗 Transformers.js</a>
-        </h3>
+        <div className="my-4 rounded border p-2 ml-auto mr-auto">
+          <label htmlFor="one">
+            <input id="one" type="checkbox" checked={browserOnly} onChange={(e) => setBrowserOnly(e.target.checked)}/>
+            Browser-only mode
+          </label>
+        </div>
         <ul>
           <li className="text-l">
             🏡
             <span className="ml-2">
-              Yes, it&apos;s another chat over documents implementation... but this one is entirely local!
+              Yes, it&apos;s another LLM-powered chat over documents implementation... but this one is entirely {browserOnly ? "local in your browser" : "local"}!
             </span>
           </li>
           <li className="hidden text-l md:block">
@@ -178,23 +240,44 @@ export function ChatWindow(props: {
               The vector store (<a target="_blank" href="https://github.com/tantaraio/voy">Voy</a>) and embeddings (<a target="_blank" href="https://huggingface.co/docs/transformers.js/index">Transformers.js</a>) are served via Vercel Edge function and run fully in the browser with no setup required.
             </span>
           </li>
-          <li>
-            ⚙️
-            <span className="ml-2">
-              The default LLM is Mistral run locally by Ollama. You&apos;ll need to install <a target="_blank" href="https://ollama.ai">the Ollama desktop app</a> and run the following commands to give this site access to the locally running model:
-              <br/>
-              <pre className="inline-flex px-2 py-1 my-2 rounded">$ OLLAMA_ORIGINS=https://webml-demo.vercel.app OLLAMA_HOST=127.0.0.1:11435 ollama serve
-              </pre>
-              <br/>
-              Then, in another window:
-              <br/>
-              <pre className="inline-flex px-2 py-1 my-2 rounded">$ OLLAMA_HOST=127.0.0.1:11435 ollama pull mistral</pre>
-            </span>
-          </li>
+          {browserOnly 
+            ? (
+              <li>
+                ⚙️
+                <span className="ml-2">
+                  The default LLM is Phi-2 run using <a href="https://webllm.mlc.ai/">WebLLM</a>.
+                  The first time you start a chat, the app will automatically download the weights and cache them in your browser.
+                </span>
+              </li>
+            ) 
+            : (
+                <li>
+                  ⚙️
+                  <span className="ml-2">
+                    The default LLM is Mistral-7B run locally by Ollama. You&apos;ll need to install <a target="_blank" href="https://ollama.ai">the Ollama desktop app</a> and run the following commands to give this site access to the locally running model:
+                    <br/>
+                    <pre className="inline-flex px-2 py-1 my-2 rounded">$ OLLAMA_ORIGINS=https://webml-demo.vercel.app OLLAMA_HOST=127.0.0.1:11435 ollama serve
+                    </pre>
+                    <br/>
+                    Then, in another window:
+                    <br/>
+                    <pre className="inline-flex px-2 py-1 my-2 rounded">$ OLLAMA_HOST=127.0.0.1:11435 ollama pull mistral</pre>
+                  </span>
+                </li>
+              )
+          }
+          {browserOnly && (
+              <li>
+                🏋️
+                <span className="ml-2">
+                  These weights are several GB in size, so it may take some time. Make sure you have a good internet connection!
+                </span>
+              </li>
+          )}
           <li>
             🗺️
             <span className="ml-2">
-              The default embeddings are <a href="https://nomic.ai">Nomic Embed v1</a>. For more speed on some machines, switch to <pre className="inline-flex px-2 py-1 my-2 rounded">&quot;Xenova/all-MiniLM-L6-v2&quot;</pre> in <pre className="inline-flex px-2 py-1 my-2 rounded">app/worker.ts</pre>.
+              The default embeddings are <pre className="inline-flex px-2 py-1 my-2 rounded">&quot;Xenova/all-MiniLM-L6-v2&quot;</pre>. For higher-quality embeddings on machines that can handle it, switch to <pre className="inline-flex px-2 py-1 my-2 rounded">nomic-ai/nomic-embed-text-v1</pre> in <pre className="inline-flex px-2 py-1 my-2 rounded">app/worker.ts</pre>.
             </span>
           </li>
           <li className="hidden text-l md:block">
@@ -220,7 +303,7 @@ export function ChatWindow(props: {
           <li className="text-l">
             👇
             <span className="ml-2">
-              Try embedding a PDF below, then asking questions! You can even turn off your WiFi.
+              Try embedding a PDF below, then asking questions! You can even turn off your WiFi{browserOnly && " after the initial model download"}.
             </span>
           </li>
         </ul>
@@ -248,7 +331,17 @@ export function ChatWindow(props: {
           [...messages]
             .reverse()
             .map((m, i) => (
-              <ChatMessageBubble key={i} message={m} aiEmoji={emoji}></ChatMessageBubble>
+              <ChatMessageBubble
+                key={i}
+                message={m}
+                aiEmoji={emoji}
+                onRemovePressed={() => setMessages(
+                  (previousMessages) => {
+                    const displayOrderedMessages = previousMessages.reverse();
+                    return [...displayOrderedMessages.slice(0, i), ...displayOrderedMessages.slice(i + 1)].reverse();
+                  }
+                )}
+              ></ChatMessageBubble>
             ))
         ) : (
           ""
