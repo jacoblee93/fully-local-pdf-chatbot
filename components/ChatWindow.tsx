@@ -38,6 +38,7 @@ export function ChatWindow(props: {
         // Config copied from:
         // https://github.com/mlc-ai/web-llm/blob/eaaff6a7730b6403810bb4fd2bbc4af113c36050/examples/simple-chat/src/gh-config.js
         const webLLMConfig = {
+          temperature: 0.1,
           modelRecord: {
             "model_url": "https://huggingface.co/mlc-ai/phi-2-q4f32_1-MLC/resolve/main/",
             "local_id": "Phi2-q4f32_1",

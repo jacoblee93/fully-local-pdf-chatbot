@@ -1,10 +1,10 @@
-# 🏠 Fully Client-Side Chat Over Documents
+# 🏠 Fully Local Chat Over Documents
 
 Yes, it's another chat over documents implementation... but this one is entirely local!
 
-It can even run fully in your browser with a low-powered LLM with [WebLLM](https://webllm.mlc.ai/)!
+It can even run fully in your browser with a small LLM via [WebLLM](https://webllm.mlc.ai/)!
 
-![](/public/images/demo.gif)
+![](/public/images/demo_browser_only.gif)
 
 It's a Next.js app that read the content of an uploaded PDF, chunks it, adds it to a vector store, and
 performs RAG, all client side. You can even turn off your WiFi after the site loads.
@@ -17,13 +17,15 @@ Users can choose one of the below options to run inference:
 
 You can run the entire stack your browser via [WebLLM](https://webllm.mlc.ai/). The model used is the small, 2.7B parameter [Phi-2](https://huggingface.co/microsoft/phi-2).
 
-Note that the first time you start a chat, the app will download and cache the model weights. This download is several GB in size, so make sure you have a good internet connection!
+You don't have to leave the window to set this up - just upload a PDF and go!
+
+Note that the first time you start a chat, the app will download and cache the model weights. This download is several GB in size and may take a little while, so make sure you have a good internet connection!
 
 ## Fully client-side Ollama
 
 You can run more powerful, general models outside the browser using [Ollama's desktop app](https://ollama.ai). Users will need to download and set up then run the following commands to allow the site access to a locally running Mistral instance:
 
-## Mac/Linux
+### Mac/Linux
 
 ```bash
 $ OLLAMA_ORIGINS=https://webml-demo.vercel.app OLLAMA_HOST=127.0.0.1:11435 ollama serve
@@ -34,7 +36,7 @@ Then, in another terminal window:
 $ OLLAMA_HOST=127.0.0.1:11435 ollama pull mistral
 ```
 
-## Windows
+### Windows
 
 ```cmd
 $ set OLLAMA_ORIGINS=https://webml-demo.vercel.app

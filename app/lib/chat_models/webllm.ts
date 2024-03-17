@@ -19,6 +19,7 @@ import {
  */
 export interface WebLLMInputs extends BaseChatModelParams {
   modelRecord: ModelRecord;
+  temperature?: number;
 }
 
 export interface WebLLMCallOptions extends BaseLanguageModelCallOptions {}
@@ -28,20 +29,22 @@ export interface WebLLMCallOptions extends BaseLanguageModelCallOptions {}
  *  This can be installed using `npm install -S @mlc-ai/web-llm`
  * @example
  * ```typescript
- * // Initialize the ChatWebLLM model with the path to the model binary file.
+ * // Initialize the ChatWebLLM model with the model record.
  * const model = new ChatWebLLM({
- *   modelPath: "/Replace/with/path/to/your/model/gguf-llama2-q4_0.bin",
+ *   modelRecord: {
+ *     "model_url": "https://huggingface.co/mlc-ai/phi-2-q4f32_1-MLC/resolve/main/",
+ *     "local_id": "Phi2-q4f32_1",
+ *     "model_lib_url": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/phi-2/phi-2-q4f32_1-ctx2k-webgpu.wasm",
+ *     "vram_required_MB": 4032.48,
+ *     "low_resource_required": false,
+ *   },
  *   temperature: 0.5,
  * });
  *
  * // Call the model with a message and await the response.
- * const response = await model.call([
+ * const response = await model.invoke([
  *   new HumanMessage({ content: "My name is John." }),
  * ]);
- *
- * // Log the response to the console.
- * console.log({ response });
- *
  * ```
  */
 export class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
@@ -51,6 +54,8 @@ export class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
 
   modelRecord: ModelRecord;
 
+  temperature?: number;
+
   static lc_name() {
     return "ChatWebLLM";
   }
@@ -59,6 +64,7 @@ export class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
     super(inputs);
     this._chatModule = new ChatModule();
     this.modelRecord = inputs.modelRecord;
+    this.temperature = inputs.temperature;
   }
 
   _llmType() {
@@ -113,6 +119,7 @@ export class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
         stream: true,
         messages: messagesInput,
         stop: options.stop,
+        temperature: this.temperature,
       },
       {},
     );
