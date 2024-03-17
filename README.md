@@ -21,7 +21,7 @@ You don't have to leave the window to set this up - just upload a PDF and go!
 
 Note that the first time you start a chat, the app will download and cache the model weights. This download is several GB in size and may take a little while, so make sure you have a good internet connection!
 
-## Fully client-side Ollama
+## Ollama
 
 You can run more powerful, general models outside the browser using [Ollama's desktop app](https://ollama.ai). Users will need to download and set up then run the following commands to allow the site access to a locally running Mistral instance:
 
@@ -66,7 +66,20 @@ While the goal is to run as much of the app as possible directly in the browser,
 
 To run/deploy this yourself, simply fork this repo and install the required dependencies with `yarn`.
 
-There are no required environment variables!
+There are no required environment variables, but you can optionally set up [LangSmith tracing](https://smith.langchain.com/) while developing locally to help debug the prompts and the chain. Copy the `.env.example` file into a `.env.local` file:
+
+```ini
+# No environment variables required!
+
+# LangSmith tracing from the web worker.
+# WARNING: FOR DEVELOPMENT ONLY. DO NOT DEPLOY A LIVE VERSION WITH THESE
+# VARIABLES SET AS YOU WILL LEAK YOUR LANGCHAIN API KEY.
+NEXT_PUBLIC_LANGCHAIN_TRACING_V2="true"
+NEXT_PUBLIC_LANGCHAIN_API_KEY=
+NEXT_PUBLIC_LANGCHAIN_PROJECT=
+```
+
+Just make sure you don't set this in production, as your LangChain API key will be public on the frontend!
 
 ## 📖 Further reading
 
