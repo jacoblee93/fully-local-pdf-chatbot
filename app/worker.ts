@@ -10,8 +10,6 @@ import { WebPDFLoader } from "langchain/document_loaders/web/pdf";
 
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
 import { VoyVectorStore } from "@langchain/community/vectorstores/voy";
-import { ChatOllama } from "@langchain/community/chat_models/ollama";
-import { ChatWebLLM } from "./lib/chat_models/webllm";
 import {
   ChatPromptTemplate,
   MessagesPlaceholder,
@@ -24,43 +22,37 @@ import {
   HumanMessage,
 } from "@langchain/core/messages";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
+import type { LanguageModelLike } from "@langchain/core/language_models/base";
+
 import { LangChainTracer } from "@langchain/core/tracers/tracer_langchain";
 import { Client } from "langsmith";
 
+import { ChatOllama } from "@langchain/community/chat_models/ollama";
+import { ChatWebLLM } from "./lib/chat_models/webllm";
+
 const embeddings = new HuggingFaceTransformersEmbeddings({
-  // modelName: "nomic-ai/nomic-embed-text-v1",
   modelName: "Xenova/all-MiniLM-L6-v2",
-  // Can use "Xenova/all-MiniLM-L6-v2" for less powerful but faster embeddings
+  // Can use "nomic-ai/nomic-embed-text-v1" for more powerful but slower embeddings
+  // modelName: "nomic-ai/nomic-embed-text-v1",
 });
 
 const voyClient = new VoyClient();
 const vectorstore = new VoyVectorStore(voyClient, embeddings);
-// const chatModel = new ChatOllama({
-//   baseUrl: "http://localhost:11435",
-//   temperature: 0.3,
-//   model: "mistral",
-// });
-const chatModel = new ChatWebLLM({});
 
-const RESPONSE_SYSTEM_TEMPLATE = `You are an experienced researcher, expert at interpreting and answering questions based on provided sources. Using the provided context, answer the user's question to the best of your ability using the resources provided.
-Generate a concise answer for a given question based solely on the provided search results (URL and content). You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text.
+const OLLAMA_RESPONSE_SYSTEM_TEMPLATE = `You are an experienced researcher, expert at interpreting and answering questions based on provided sources. Using the provided context, answer the user's question to the best of your ability using the resources provided.
+Generate a concise answer for a given question based solely on the provided search results. You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text.
 If there is nothing in the context relevant to the question at hand, just say "Hmm, I'm not sure." Don't try to make up an answer.
 Anything between the following \`context\` html blocks is retrieved from a knowledge bank, not part of the conversation with the user.
 <context>
-    {context}
+{context}
 <context/>
 
 REMEMBER: If there is no relevant information within the context, just say "Hmm, I'm not sure." Don't try to make up an answer. Anything between the preceding 'context' html blocks is retrieved from a knowledge bank, not part of the conversation with the user.`;
 
-const responseChainPrompt = ChatPromptTemplate.fromMessages<{
-  context: string;
-  chat_history: BaseMessage[];
-  question: string;
-}>([
-  ["system", RESPONSE_SYSTEM_TEMPLATE],
-  new MessagesPlaceholder("chat_history"),
-  ["user", `{input}`],
-]);
+const WEBLLM_RESPONSE_SYSTEM_TEMPLATE = `You are an experienced researcher, expert at interpreting and answering questions based on provided sources. Using the provided context, answer the user's question to the best of your ability using the resources provided.
+Generate a concise answer for a given question based solely on the provided search results. You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text, stay focused, and stop generating when you have answered the question.
+If there is nothing in the context relevant to the question at hand, just say "Hmm, I'm not sure." Don't try to make up an answer.`;
 
 const embedPDF = async (pdfBlob: Blob) => {
   const pdfLoader = new WebPDFLoader(pdfBlob, { parsedItemSeparator: " " });
@@ -95,10 +87,47 @@ const _formatChatHistoryAsMessages = async (
 
 const queryVectorStore = async (
   messages: ChatWindowMessage[],
-  devModeTracer?: LangChainTracer,
+  {
+    chatModel,
+    modelProvider,
+    devModeTracer,
+  }: {
+    chatModel: LanguageModelLike;
+    modelProvider: "ollama" | "webllm";
+    devModeTracer?: LangChainTracer;
+  },
 ) => {
   const text = messages[messages.length - 1].content;
   const chatHistory = await _formatChatHistoryAsMessages(messages.slice(0, -1));
+
+  const responseChainPrompt =
+    modelProvider === "ollama"
+      ? ChatPromptTemplate.fromMessages<{
+          context: string;
+          chat_history: BaseMessage[];
+          question: string;
+        }>([
+          ["system", OLLAMA_RESPONSE_SYSTEM_TEMPLATE],
+          new MessagesPlaceholder("chat_history"),
+          ["user", `{input}`],
+        ])
+      : ChatPromptTemplate.fromMessages<{
+          context: string;
+          chat_history: BaseMessage[];
+          question: string;
+        }>([
+          ["system", WEBLLM_RESPONSE_SYSTEM_TEMPLATE],
+          [
+            "user",
+            "When responding to me, use the following documents as context:\n<context>\n{context}\n</context>",
+          ],
+          [
+            "ai",
+            "Understood! I will use the documents between the above <context> tags as context when answering your next questions.",
+          ],
+          new MessagesPlaceholder("chat_history"),
+          ["user", `{input}`],
+        ]);
 
   const documentChain = await createStuffDocumentsChain({
     llm: chatModel,
@@ -108,14 +137,23 @@ const queryVectorStore = async (
     ),
   });
 
-  const historyAwarePrompt = ChatPromptTemplate.fromMessages([
-    new MessagesPlaceholder("chat_history"),
-    ["user", "{input}"],
-    [
-      "user",
-      "Given the above conversation, generate a natural language search query to look up in order to get information relevant to the conversation. Do not respond with anything except the query.",
-    ],
-  ]);
+  const historyAwarePrompt =
+    modelProvider === "ollama"
+      ? ChatPromptTemplate.fromMessages([
+          new MessagesPlaceholder("chat_history"),
+          ["user", "{input}"],
+          [
+            "user",
+            "Given the above conversation, generate a natural language search query to look up in order to get information relevant to the conversation. Do not respond with anything except the query.",
+          ],
+        ])
+      : ChatPromptTemplate.fromMessages([
+          new MessagesPlaceholder("chat_history"),
+          [
+            "user",
+            "Given the above conversation, rephrase the following question into a standalone, natural language query with important keywords that a researcher could later pass into a search engine to get information relevant to the conversation. Do not respond with anything except the query.\n\n<question_to_rephrase>\n{input}\n</question_to_rephrase>",
+          ],
+        ]);
 
   const historyAwareRetrieverChain = await createHistoryAwareRetriever({
     llm: chatModel,
@@ -189,12 +227,31 @@ self.addEventListener("message", async (event: { data: any }) => {
       throw e;
     }
   } else {
+    const modelProvider = event.data.modelProvider;
+    const modelConfig = event.data.modelConfig;
+    let chatModel: BaseChatModel | LanguageModelLike =
+      modelProvider === "ollama"
+        ? new ChatOllama(modelConfig)
+        : new ChatWebLLM(modelConfig);
+    if (modelProvider === "webllm") {
+      await (chatModel as ChatWebLLM).initialize((event) =>
+        self.postMessage({ type: "init_progress", data: event }),
+      );
+      chatModel = chatModel.bind({ stop: ["\nInstruct:", "Instruct:"] });
+    }
     try {
-      await queryVectorStore(event.data.messages, devModeTracer);
+      await queryVectorStore(event.data.messages, {
+        devModeTracer,
+        modelProvider,
+        chatModel,
+      });
     } catch (e: any) {
       self.postMessage({
         type: "error",
-        error: `${e.message}. Make sure you are running Ollama.`,
+        error:
+          event.data.modelProvider === "ollama"
+            ? `${e.message}. Make sure you are running Ollama.`
+            : `${e.message}. Make sure your browser supports WebLLM/WebGPU.`,
       });
       throw e;
     }

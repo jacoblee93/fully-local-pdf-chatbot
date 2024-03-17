@@ -6,13 +6,20 @@ import type { BaseLanguageModelCallOptions } from "@langchain/core/language_mode
 import { CallbackManagerForLLMRun } from "@langchain/core/callbacks/manager";
 import { BaseMessage, AIMessageChunk } from "@langchain/core/messages";
 import { ChatGenerationChunk } from "@langchain/core/outputs";
-import { ChatModule, ChatCompletionMessageParam } from "@mlc-ai/web-llm";
+import {
+  ChatModule,
+  type ChatCompletionMessageParam,
+  type ModelRecord,
+  InitProgressCallback,
+} from "@mlc-ai/web-llm";
 
 /**
  * Note that the modelPath is the only required parameter. For testing you
  * can set this in the environment variable `LLAMA_PATH`.
  */
-export interface WebLLMInputs extends BaseChatModelParams {}
+export interface WebLLMInputs extends BaseChatModelParams {
+  modelRecord: ModelRecord;
+}
 
 export interface WebLLMCallOptions extends BaseLanguageModelCallOptions {}
 
@@ -40,7 +47,9 @@ export interface WebLLMCallOptions extends BaseLanguageModelCallOptions {}
 export class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
   static inputs: WebLLMInputs;
 
-  _chatModule: ChatModule;
+  protected _chatModule: ChatModule;
+
+  modelRecord: ModelRecord;
 
   static lc_name() {
     return "ChatWebLLM";
@@ -49,34 +58,29 @@ export class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
   constructor(inputs: WebLLMInputs) {
     super(inputs);
     this._chatModule = new ChatModule();
+    this.modelRecord = inputs.modelRecord;
   }
 
   _llmType() {
     return "web-llm";
   }
 
+  async initialize(progressCallback?: InitProgressCallback) {
+    if (progressCallback !== undefined) {
+      this._chatModule.setInitProgressCallback(progressCallback);
+    }
+    await this._chatModule.reload(this.modelRecord.local_id, undefined, {
+      model_list: [this.modelRecord],
+    });
+    this._chatModule.setInitProgressCallback(() => {});
+  }
+
   async *_streamResponseChunks(
     messages: BaseMessage[],
-    _options: this["ParsedCallOptions"],
-    runManager?: CallbackManagerForLLMRun | undefined,
+    options: this["ParsedCallOptions"],
+    runManager?: CallbackManagerForLLMRun,
   ): AsyncGenerator<ChatGenerationChunk> {
-    // Config copied from:
-    // https://github.com/mlc-ai/web-llm/blob/eaaff6a7730b6403810bb4fd2bbc4af113c36050/examples/simple-chat/src/gh-config.js
-    await this._chatModule.reload("gemma-2b-it-q4f16_1", undefined, {
-      model_list: [
-        {
-          model_url:
-            "https://huggingface.co/mlc-ai/gemma-2b-it-q4f16_1-MLC/resolve/main/",
-          local_id: "gemma-2b-it-q4f16_1",
-          model_lib_url:
-            "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/gemma-2b-it/gemma-2b-it-q4f16_1-ctx4k_cs1k-webgpu.wasm",
-          vram_required_MB: 1476.52,
-          low_resource_required: false,
-          buffer_size_required_bytes: 262144000,
-          required_features: ["shader-f16"],
-        },
-      ],
-    });
+    await this.initialize();
 
     const messagesInput: ChatCompletionMessageParam[] = messages.map(
       (message) => {
@@ -108,6 +112,7 @@ export class ChatWebLLM extends SimpleChatModel<WebLLMCallOptions> {
       {
         stream: true,
         messages: messagesInput,
+        stop: options.stop,
       },
       {},
     );
