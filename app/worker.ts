@@ -11,6 +11,7 @@ import { WebPDFLoader } from "langchain/document_loaders/web/pdf";
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
 import { VoyVectorStore } from "@langchain/community/vectorstores/voy";
 import { ChatOllama } from "@langchain/community/chat_models/ollama";
+import { ChatWebLLM } from "./lib/chat_models/webllm";
 import {
   ChatPromptTemplate,
   MessagesPlaceholder,
@@ -23,19 +24,23 @@ import {
   HumanMessage,
 } from "@langchain/core/messages";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
+import { LangChainTracer } from "@langchain/core/tracers/tracer_langchain";
+import { Client } from "langsmith";
 
 const embeddings = new HuggingFaceTransformersEmbeddings({
-  modelName: "nomic-ai/nomic-embed-text-v1",
+  // modelName: "nomic-ai/nomic-embed-text-v1",
+  modelName: "Xenova/all-MiniLM-L6-v2",
   // Can use "Xenova/all-MiniLM-L6-v2" for less powerful but faster embeddings
 });
 
 const voyClient = new VoyClient();
 const vectorstore = new VoyVectorStore(voyClient, embeddings);
-const ollama = new ChatOllama({
-  baseUrl: "http://localhost:11435",
-  temperature: 0.3,
-  model: "mistral",
-});
+// const chatModel = new ChatOllama({
+//   baseUrl: "http://localhost:11435",
+//   temperature: 0.3,
+//   model: "mistral",
+// });
+const chatModel = new ChatWebLLM({});
 
 const RESPONSE_SYSTEM_TEMPLATE = `You are an experienced researcher, expert at interpreting and answering questions based on provided sources. Using the provided context, answer the user's question to the best of your ability using the resources provided.
 Generate a concise answer for a given question based solely on the provided search results (URL and content). You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text.
@@ -88,12 +93,12 @@ const _formatChatHistoryAsMessages = async (
   });
 };
 
-const queryVectorStore = async (messages: ChatWindowMessage[]) => {
+const queryVectorStore = async (messages: ChatWindowMessage[], devModeTracer?: LangChainTracer) => {
   const text = messages[messages.length - 1].content;
   const chatHistory = await _formatChatHistoryAsMessages(messages.slice(0, -1));
 
   const documentChain = await createStuffDocumentsChain({
-    llm: ollama,
+    llm: chatModel,
     prompt: responseChainPrompt,
     documentPrompt: PromptTemplate.fromTemplate(
       `<doc>\n{page_content}\n</doc>`,
@@ -110,7 +115,7 @@ const queryVectorStore = async (messages: ChatWindowMessage[]) => {
   ]);
 
   const historyAwareRetrieverChain = await createHistoryAwareRetriever({
-    llm: ollama,
+    llm: chatModel,
     retriever: vectorstore.asRetriever(),
     rephrasePrompt: historyAwarePrompt,
   });
@@ -128,6 +133,8 @@ const queryVectorStore = async (messages: ChatWindowMessage[]) => {
   const stream = await fullChain.stream({
     input: text,
     chat_history: chatHistory,
+  }, {
+    callbacks: devModeTracer !== undefined ? [devModeTracer] : []
   });
 
   for await (const chunk of stream) {
@@ -146,11 +153,24 @@ const queryVectorStore = async (messages: ChatWindowMessage[]) => {
 };
 
 // Listen for messages from the main thread
-self.addEventListener("message", async (event: any) => {
+self.addEventListener("message", async (event: { data: any }) => {
   self.postMessage({
     type: "log",
     data: `Received data!`,
   });
+
+  let devModeTracer;
+  if (
+    event.data.DEV_LANGCHAIN_TRACING !== undefined &&
+    typeof event.data.DEV_LANGCHAIN_TRACING === "object"
+  ) {
+    devModeTracer = new LangChainTracer({
+      projectName: event.data.DEV_LANGCHAIN_TRACING.LANGCHAIN_PROJECT,
+      client: new Client({
+        apiKey: event.data.DEV_LANGCHAIN_TRACING.LANGCHAIN_API_KEY,
+      })
+    });
+  }
 
   if (event.data.pdf) {
     try {
@@ -164,7 +184,7 @@ self.addEventListener("message", async (event: any) => {
     }
   } else {
     try {
-      await queryVectorStore(event.data.messages);
+      await queryVectorStore(event.data.messages, devModeTracer);
     } catch (e: any) {
       self.postMessage({
         type: "error",

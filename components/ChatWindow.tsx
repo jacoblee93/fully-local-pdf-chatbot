@@ -27,14 +27,29 @@ export function ChatWindow(props: {
     if (!worker.current) {
       throw new Error("Worker is not ready.");
     }
-
     return new ReadableStream({
       start(controller) {
         if (!worker.current) {
           controller.close();
           return;
         }
-        worker.current?.postMessage({ messages });
+        const payload: Record<string, any> = {
+          messages,
+        };
+        if (
+          process.env.NEXT_PUBLIC_LANGCHAIN_TRACING_V2 === "true" &&
+          process.env.NEXT_PUBLIC_LANGCHAIN_API_KEY !== undefined
+        ) {
+          console.warn(
+            "[WARNING]: You have set your LangChain API key publicly. This should only be done in local devlopment - remember to remove it before deploying!"
+          );
+          payload.DEV_LANGCHAIN_TRACING = {
+            LANGCHAIN_TRACING_V2: "true",
+            LANGCHAIN_API_KEY: process.env.NEXT_PUBLIC_LANGCHAIN_API_KEY,
+            LANGCHAIN_PROJECT: process.env.NEXT_PUBLIC_LANGCHAIN_PROJECT,
+          };
+        }
+        worker.current?.postMessage(payload);
         const onMessageReceived = (e: any) => {
           switch (e.data.type) {
             case "log":
