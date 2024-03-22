@@ -199,10 +199,8 @@ const queryVectorStore = async (
   });
 };
 
-console.log('addeventlistener')
 // Listen for messages from the main thread
 self.addEventListener("message", async (event: { data: any }) => {
-  console.log("Received data!", event.data);
   self.postMessage({
     type: "log",
     data: `Received data!`,
@@ -233,6 +231,12 @@ self.addEventListener("message", async (event: { data: any }) => {
     }
   } else if (event.data.modelProvider) {
     const modelProvider = event.data.modelProvider;
+    if (modelProvider === "ai-mask" && !aiMaskClient) {
+      self.postMessage({
+        type: "error",
+        error: 'AIMaskClient not inititialized',
+      });
+    }
     const modelConfig = event.data.modelConfig;
     let chatModel: BaseChatModel | LanguageModelLike =
       modelProvider === "ollama"
