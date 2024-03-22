@@ -10,6 +10,7 @@ import { ChatMessageBubble } from "@/components/ChatMessageBubble";
 import { ChatWindowMessage } from '@/schema/ChatWindowMessage';
 import { AIMaskClient } from '@ai-mask/sdk';
 
+type ModelProvider = 'ollama' | 'web-llm' | 'ai-mask'
 export function ChatWindow(props: {
   placeholder?: string;
 }) {
@@ -19,7 +20,7 @@ export function ChatWindow(props: {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPDF, setSelectedPDF] = useState<File | null>(null);
   const [readyToChat, setReadyToChat] = useState(false);
-  const [modelProvider, setModelProvider] = useState<'ollama' | 'web-llm' | 'ai-mask'>('ai-mask');
+  const [modelProvider, setModelProvider] = useState<ModelProvider>('ai-mask');
   const initProgressToastId = useRef<Id | null>(null);
   const titleText = {
     'web-llm': "Fully In-Browser Chat Over Documents",
@@ -242,12 +243,14 @@ export function ChatWindow(props: {
         <h1 className="text-3xl md:text-4xl mb-2 ml-auto mr-auto">
           {emoji} {titleText} {emoji}
         </h1>
-        <div className="my-4 rounded border ml-auto mr-auto">
-          <select value={modelProvider} onChange={e => setModelProvider(e.target.value)} className="p-2 bg-white text-black">
+        <div className="my-4  ml-auto mr-auto">
+          <label htmlFor="modelSelector" className='mr-2'>Model provider</label>
+          <select id="modelSelector" value={modelProvider} onChange={e => setModelProvider(e.target.value as ModelProvider)} className="p-2 bg-white text-black rounded border">
             <option value="web-llm">Web-LLM</option>
             <option value="ollama">Ollama</option>
             <option value="ai-mask">AI-Mask</option>
           </select>
+
         </div>
         <ul>
           <li className="text-l">

@@ -231,29 +231,39 @@ self.addEventListener("message", async (event: { data: any }) => {
     }
   } else if (event.data.modelProvider) {
     const modelProvider = event.data.modelProvider;
-    if (modelProvider === "ai-mask" && !aiMaskClient) {
-      self.postMessage({
-        type: "error",
-        error: 'AIMaskClient not inititialized',
-      });
-    }
     const modelConfig = event.data.modelConfig;
-    let chatModel: BaseChatModel | LanguageModelLike =
-      modelProvider === "ollama"
-        ? new ChatOllama(modelConfig)
-        : (modelProvider === "ai-mask" ?
-          new ChatAIMask({
-            ...modelConfig,
-            aiMaskClient,
-          }) :
-          new ChatWebLLM(modelConfig)
-        );
+    let chatModel: BaseChatModel | LanguageModelLike
 
-    if (modelProvider === "webllm") {
-      await (chatModel as ChatWebLLM).initialize((event) =>
-        self.postMessage({ type: "init_progress", data: event }),
-      );
-      chatModel = chatModel.bind({ stop: ["\nInstruct:", "Instruct:"] });
+    switch (modelProvider) {
+      case "ollama":
+        chatModel = new ChatOllama(modelConfig)
+        break;
+      case "web-llm":
+        chatModel = new ChatWebLLM(modelConfig)
+        await (chatModel as ChatWebLLM).initialize((event) =>
+          self.postMessage({ type: "init_progress", data: event }),
+        );
+        chatModel = chatModel.bind({ stop: ["\nInstruct:", "Instruct:"] });
+        break;
+      case "ai-mask":
+        if (!aiMaskClient) {
+          self.postMessage({
+            type: "error",
+            error: 'AIMaskClient not inititialized',
+          });
+        }
+        chatModel = new ChatAIMask({
+          ...modelConfig,
+          aiMaskClient,
+        })
+        chatModel = chatModel.bind({ stop: ["\nInstruct:", "Instruct:"] });
+        break;
+      default:
+        self.postMessage({
+          type: "error",
+          error: 'Invalid model provider',
+        });
+        throw new Error('Invalid model provider')
     }
     try {
       await queryVectorStore(event.data.messages, {
