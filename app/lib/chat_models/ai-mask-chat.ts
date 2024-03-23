@@ -75,7 +75,7 @@ export class ChatAIMask extends SimpleChatModel<AIMaskCallOptions> {
     constructor(inputs: AIMaskInputs) {
         super(inputs);
 
-        this._aiMaskClient = inputs?.aiMaskClient ?? new AIMaskClient({ name: fields?.appName })
+        this._aiMaskClient = inputs?.aiMaskClient ?? new AIMaskClient({ name: inputs?.appName })
 
         this.modelId = inputs.modelId
         this.temperature = inputs.temperature;
