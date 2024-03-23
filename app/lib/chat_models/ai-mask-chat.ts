@@ -13,6 +13,7 @@ export interface AIMaskInputs extends BaseChatModelParams {
     modelId: string
     temperature?: number;
     aiMaskClient?: AIMaskClient
+    appName?: string
 }
 
 export interface AIMaskCallOptions extends BaseLanguageModelCallOptions {
@@ -74,17 +75,10 @@ export class ChatAIMask extends SimpleChatModel<AIMaskCallOptions> {
     constructor(inputs: AIMaskInputs) {
         super(inputs);
 
-        if (inputs.aiMaskClient) {
-            this._aiMaskClient = inputs.aiMaskClient
-        } else {
-            if (!AIMaskClient.isExtensionAvailable()) {
-                throw new Error('AI Mask extension is not available')
-            }
-            this._aiMaskClient = new AIMaskClient({ name: 'fully-local-pdf-chatbot' })
-        }
+        this._aiMaskClient = inputs?.aiMaskClient ?? new AIMaskClient({ name: fields?.appName })
+
         this.modelId = inputs.modelId
         this.temperature = inputs.temperature;
-
     }
 
     _llmType() {

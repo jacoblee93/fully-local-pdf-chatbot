@@ -190,7 +190,6 @@ export function ChatWindow(props: {
       });
       worker.current.postMessage('caca')
       if (AIMaskClient.isExtensionAvailable()) {
-        console.log('AI-Mask is available')
         const aiMask = new AIMaskClient({ name: 'fully-local-pdf-chatbot' });
         aiMask.provideWorkerPort(worker.current);
       }
@@ -210,7 +209,10 @@ export function ChatWindow(props: {
       return;
     }
     setIsLoading(true);
-    worker.current?.postMessage({ pdf: selectedPDF });
+    worker.current?.postMessage({
+      pdf: selectedPDF,
+      modelProvider,
+    });
     const onMessageReceived = (e: any) => {
       switch (e.data.type) {
         case "log":
