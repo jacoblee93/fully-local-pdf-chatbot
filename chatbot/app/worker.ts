@@ -1,4 +1,4 @@
-import { ChatWindowMessage } from "@/schema/ChatWindowMessage";
+import { ChatWindowMessage } from "@/chatbot/schema/ChatWindowMessage";
 
 import { Voy as VoyClient } from "voy-search";
 

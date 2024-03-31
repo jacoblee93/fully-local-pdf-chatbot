@@ -1,0 +1,14 @@
+{
+  "name": "extension",
+  "type": "module",
+  "packageManager": "yarn@3.4.1",
+  "scripts": {
+    "build": "tsc"
+  },
+  "devDependencies": {
+    "typescript": "5.1.6"
+  },
+  "dependencies": {
+    "@langchain/core": "^0.1.48"
+  }
+}

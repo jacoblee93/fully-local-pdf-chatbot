@@ -1,0 +1,43 @@
+{
+  "name": "chatbot",
+  "author": "Jacob Lee",
+  "license": "MIT",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "format": "prettier --write \"app\""
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@langchain/community": "^0.0.40",
+    "@mlc-ai/web-llm": "^0.2.28",
+    "@types/node": "20.4.5",
+    "@types/react": "18.2.17",
+    "@types/react-dom": "18.2.7",
+    "@xenova/transformers": "^2.16.0",
+    "autoprefixer": "10.4.14",
+    "encoding": "^0.1.13",
+    "eslint": "8.46.0",
+    "eslint-config-next": "13.4.12",
+    "langchain": "^0.1.28",
+    "langsmith": "^0.1.13",
+    "next": "13.4.12",
+    "pdf-parse": "^1.1.1",
+    "postcss": "8.4.27",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
+    "react-toastify": "^10.0.5",
+    "tailwindcss": "3.3.3",
+    "typescript": "5.1.6",
+    "voy-search": "^0.6.3"
+  },
+  "devDependencies": {
+    "prettier": "3.0.0"
+  }
+}
