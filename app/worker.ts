@@ -1,6 +1,7 @@
 import { ChatWindowMessage } from "@/schema/ChatWindowMessage";
 
 import { Voy as VoyClient } from "voy-search";
+import { AIMaskClient } from "@ai-mask/sdk";
 
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
@@ -9,7 +10,6 @@ import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retr
 import { WebPDFLoader } from "langchain/document_loaders/web/pdf";
 
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
-import { AIMaskEmbeddings } from "./lib/embeddings/ai-mask-embeddings";
 import { VectorStore } from "@langchain/core/vectorstores";
 import { VoyVectorStore } from "@langchain/community/vectorstores/voy";
 import {
@@ -31,14 +31,14 @@ import { LangChainTracer } from "@langchain/core/tracers/tracer_langchain";
 import { Client } from "langsmith";
 
 import { ChatOllama } from "@langchain/community/chat_models/ollama";
-import { ChatAIMask } from "./lib/chat_models/ai-mask-chat";
+import { ChatAIMask } from "./lib/chat_models/ai_mask";
+import { AIMaskEmbeddings } from "./lib/embeddings/ai_mask";
 import { ChatWebLLM } from "./lib/chat_models/webllm";
-import { AIMaskClient } from '@ai-mask/sdk';
 
-let aiMaskClient: AIMaskClient
+let aiMaskClient: AIMaskClient;
 
 const voyClient = new VoyClient();
-let vectorstore: VectorStore
+let vectorstore: VectorStore;
 
 const OLLAMA_RESPONSE_SYSTEM_TEMPLATE = `You are an experienced researcher, expert at interpreting and answering questions based on provided sources. Using the provided context, answer the user's question to the best of your ability using the resources provided.
 Generate a concise answer for a given question based solely on the provided search results. You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text.
@@ -57,7 +57,7 @@ If there is nothing in the context relevant to the question at hand, just say "H
 const embedPDF = async (pdfBlob: Blob, modelProvider: string) => {
   if (modelProvider === "ai-mask") {
     if (!aiMaskClient) {
-      throw new Error("AIMaskClient not inititialized");
+      throw new Error("AIMaskClient has not finished inititializing");
     }
 
     const embeddingsAIMask = new AIMaskEmbeddings({
@@ -125,31 +125,31 @@ const queryVectorStore = async (
   const responseChainPrompt =
     modelProvider === "ollama"
       ? ChatPromptTemplate.fromMessages<{
-        context: string;
-        chat_history: BaseMessage[];
-        question: string;
-      }>([
-        ["system", OLLAMA_RESPONSE_SYSTEM_TEMPLATE],
-        new MessagesPlaceholder("chat_history"),
-        ["user", `{input}`],
-      ])
+          context: string;
+          chat_history: BaseMessage[];
+          question: string;
+        }>([
+          ["system", OLLAMA_RESPONSE_SYSTEM_TEMPLATE],
+          new MessagesPlaceholder("chat_history"),
+          ["user", `{input}`],
+        ])
       : ChatPromptTemplate.fromMessages<{
-        context: string;
-        chat_history: BaseMessage[];
-        question: string;
-      }>([
-        ["system", WEBLLM_RESPONSE_SYSTEM_TEMPLATE],
-        [
-          "user",
-          "When responding to me, use the following documents as context:\n<context>\n{context}\n</context>",
-        ],
-        [
-          "ai",
-          "Understood! I will use the documents between the above <context> tags as context when answering your next questions.",
-        ],
-        new MessagesPlaceholder("chat_history"),
-        ["user", `{input}`],
-      ]);
+          context: string;
+          chat_history: BaseMessage[];
+          question: string;
+        }>([
+          ["system", WEBLLM_RESPONSE_SYSTEM_TEMPLATE],
+          [
+            "user",
+            "When responding to me, use the following documents as context:\n<context>\n{context}\n</context>",
+          ],
+          [
+            "ai",
+            "Understood! I will use the documents between the above <context> tags as context when answering your next questions.",
+          ],
+          new MessagesPlaceholder("chat_history"),
+          ["user", `{input}`],
+        ]);
 
   const documentChain = await createStuffDocumentsChain({
     llm: chatModel,
@@ -162,20 +162,20 @@ const queryVectorStore = async (
   const historyAwarePrompt =
     modelProvider === "ollama"
       ? ChatPromptTemplate.fromMessages([
-        new MessagesPlaceholder("chat_history"),
-        ["user", "{input}"],
-        [
-          "user",
-          "Given the above conversation, generate a natural language search query to look up in order to get information relevant to the conversation. Do not respond with anything except the query.",
-        ],
-      ])
+          new MessagesPlaceholder("chat_history"),
+          ["user", "{input}"],
+          [
+            "user",
+            "Given the above conversation, generate a natural language search query to look up in order to get information relevant to the conversation. Do not respond with anything except the query.",
+          ],
+        ])
       : ChatPromptTemplate.fromMessages([
-        new MessagesPlaceholder("chat_history"),
-        [
-          "user",
-          "Given the above conversation, rephrase the following question into a standalone, natural language query with important keywords that a researcher could later pass into a search engine to get information relevant to the conversation. Do not respond with anything except the query.\n\n<question_to_rephrase>\n{input}\n</question_to_rephrase>",
-        ],
-      ]);
+          new MessagesPlaceholder("chat_history"),
+          [
+            "user",
+            "Given the above conversation, rephrase the following question into a standalone, natural language query with important keywords that a researcher could later pass into a search engine to get information relevant to the conversation. Do not respond with anything except the query.\n\n<question_to_rephrase>\n{input}\n</question_to_rephrase>",
+          ],
+        ]);
 
   const historyAwareRetrieverChain = await createHistoryAwareRetriever({
     llm: chatModel,
@@ -251,13 +251,13 @@ self.addEventListener("message", async (event: { data: any }) => {
   } else if (event.data.messages) {
     const modelProvider = event.data.modelProvider;
     const modelConfig = event.data.modelConfig;
-    let chatModel: BaseChatModel | LanguageModelLike
+    let chatModel: BaseChatModel | LanguageModelLike;
     switch (modelProvider) {
       case "ollama":
-        chatModel = new ChatOllama(modelConfig)
+        chatModel = new ChatOllama(modelConfig);
         break;
       case "web-llm":
-        chatModel = new ChatWebLLM(modelConfig)
+        chatModel = new ChatWebLLM(modelConfig);
         await (chatModel as ChatWebLLM).initialize((event) =>
           self.postMessage({ type: "init_progress", data: event }),
         );
@@ -267,22 +267,22 @@ self.addEventListener("message", async (event: { data: any }) => {
         if (!aiMaskClient) {
           self.postMessage({
             type: "error",
-            error: 'AIMaskClient not inititialized',
+            error: "AIMaskClient has not finished inititializing",
           });
           return;
         }
         chatModel = new ChatAIMask({
           ...modelConfig,
           aiMaskClient,
-        })
+        });
         chatModel = chatModel.bind({ stop: ["\nInstruct:", "Instruct:"] });
         break;
       default:
         self.postMessage({
           type: "error",
-          error: 'Invalid model provider',
+          error: "Invalid model provider",
         });
-        throw new Error('Invalid model provider')
+        throw new Error("Invalid model provider");
     }
     try {
       await queryVectorStore(event.data.messages, {
@@ -309,5 +309,5 @@ self.addEventListener("message", async (event: { data: any }) => {
 });
 
 (async () => {
-  aiMaskClient = await AIMaskClient.getWorkerClient()
-})()
+  aiMaskClient = await AIMaskClient.getWorkerClient();
+})();
