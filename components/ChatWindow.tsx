@@ -190,9 +190,12 @@ export function ChatWindow(props: {
       });
       if (AIMaskClient.isExtensionAvailable()) {
         const aiMask = new AIMaskClient({ name: 'fully-local-pdf-chatbot' });
-        aiMask.provideWorkerPort(worker.current);
+        aiMask.provideWorkerPort(worker.current).then(() => {
+          setIsLoading(false);
+        });
+      } else {
+        setIsLoading(false);
       }
-      setIsLoading(false);
     }
   }, []);
 
