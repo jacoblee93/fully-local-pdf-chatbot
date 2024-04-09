@@ -20,7 +20,7 @@ export function ChatWindow(props: {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPDF, setSelectedPDF] = useState<File | null>(null);
   const [readyToChat, setReadyToChat] = useState(false);
-  const [modelProvider, setModelProvider] = useState<ModelProvider>('ai-mask');
+  const [modelProvider, setModelProvider] = useState<ModelProvider>('ollama');
   const initProgressToastId = useRef<Id | null>(null);
   const titleText = {
     'web-llm': "Fully In-Browser Chat Over Documents",
@@ -250,8 +250,8 @@ export function ChatWindow(props: {
         <div className="my-4  ml-auto mr-auto">
           <label htmlFor="modelSelector" className='mr-2'>Model provider</label>
           <select id="modelSelector" value={modelProvider} onChange={e => setModelProvider(e.target.value as ModelProvider)} className="p-2 bg-white text-black rounded border">
-            <option value="web-llm">Web-LLM</option>
             <option value="ollama">Ollama</option>
+            <option value="web-llm">Web-LLM</option>
             <option value="ai-mask">AI-Mask</option>
           </select>
 
