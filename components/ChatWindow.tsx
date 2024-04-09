@@ -188,7 +188,6 @@ export function ChatWindow(props: {
       worker.current = new Worker(new URL('../app/worker.ts', import.meta.url), {
         type: 'module',
       });
-      worker.current.postMessage('caca')
       if (AIMaskClient.isExtensionAvailable()) {
         const aiMask = new AIMaskClient({ name: 'fully-local-pdf-chatbot' });
         aiMask.provideWorkerPort(worker.current);

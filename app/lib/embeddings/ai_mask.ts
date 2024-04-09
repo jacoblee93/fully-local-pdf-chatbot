@@ -102,7 +102,6 @@ export class AIMaskEmbeddings
         { texts, pooling: "mean", normalize: true },
         { modelId: this.modelName },
       );
-      console.log({ output });
       return output;
     });
   }

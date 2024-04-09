@@ -113,19 +113,15 @@ export class ChatAIMask extends SimpleChatModel<AIMaskCallOptions> {
   }
 
   async _call(messages: BaseMessage[]): Promise<string> {
-    try {
-      const completion = await this._aiMaskClient.chat(
-        {
-          messages: convertMessages(messages),
-          temperature: this.temperature,
-        },
-        {
-          modelId: this.modelId,
-        },
-      );
-      return completion;
-    } catch (e) {
-      throw new Error("Error getting prompt completion.");
-    }
+    const completion = await this._aiMaskClient.chat(
+      {
+        messages: convertMessages(messages),
+        temperature: this.temperature,
+      },
+      {
+        modelId: this.modelId,
+      },
+    );
+    return completion;
   }
 }
