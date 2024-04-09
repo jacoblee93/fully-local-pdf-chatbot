@@ -1,6 +1,7 @@
 import { ChatWindowMessage } from "@/schema/ChatWindowMessage";
 
 import { Voy as VoyClient } from "voy-search";
+import { AIMaskClient } from "@ai-mask/sdk";
 
 import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
@@ -9,6 +10,7 @@ import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retr
 import { WebPDFLoader } from "langchain/document_loaders/web/pdf";
 
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
+import { VectorStore } from "@langchain/core/vectorstores";
 import { VoyVectorStore } from "@langchain/community/vectorstores/voy";
 import {
   ChatPromptTemplate,
@@ -29,16 +31,14 @@ import { LangChainTracer } from "@langchain/core/tracers/tracer_langchain";
 import { Client } from "langsmith";
 
 import { ChatOllama } from "@langchain/community/chat_models/ollama";
+import { ChatAIMask } from "./lib/chat_models/ai_mask";
+import { AIMaskEmbeddings } from "./lib/embeddings/ai_mask";
 import { ChatWebLLM } from "./lib/chat_models/webllm";
 
-const embeddings = new HuggingFaceTransformersEmbeddings({
-  modelName: "Xenova/all-MiniLM-L6-v2",
-  // Can use "nomic-ai/nomic-embed-text-v1" for more powerful but slower embeddings
-  // modelName: "nomic-ai/nomic-embed-text-v1",
-});
+let aiMaskClient: AIMaskClient;
 
 const voyClient = new VoyClient();
-const vectorstore = new VoyVectorStore(voyClient, embeddings);
+let vectorstore: VectorStore;
 
 const OLLAMA_RESPONSE_SYSTEM_TEMPLATE = `You are an experienced researcher, expert at interpreting and answering questions based on provided sources. Using the provided context, answer the user's question to the best of your ability using the resources provided.
 Generate a concise answer for a given question based solely on the provided search results. You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text.
@@ -54,7 +54,26 @@ const WEBLLM_RESPONSE_SYSTEM_TEMPLATE = `You are an experienced researcher, expe
 Generate a concise answer for a given question based solely on the provided search results. You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text, stay focused, and stop generating when you have answered the question.
 If there is nothing in the context relevant to the question at hand, just say "Hmm, I'm not sure." Don't try to make up an answer.`;
 
-const embedPDF = async (pdfBlob: Blob) => {
+const embedPDF = async (pdfBlob: Blob, modelProvider: string) => {
+  if (modelProvider === "ai-mask") {
+    if (!aiMaskClient) {
+      throw new Error("AIMaskClient has not finished inititializing");
+    }
+
+    const embeddingsAIMask = new AIMaskEmbeddings({
+      modelName: "Xenova/all-MiniLM-L6-v2",
+      aiMaskClient,
+    });
+    vectorstore = new VoyVectorStore(voyClient, embeddingsAIMask);
+  } else {
+    const embeddings = new HuggingFaceTransformersEmbeddings({
+      modelName: "Xenova/all-MiniLM-L6-v2",
+      // Can use "nomic-ai/nomic-embed-text-v1" for more powerful but slower embeddings
+      // modelName: "nomic-ai/nomic-embed-text-v1",
+    });
+    vectorstore = new VoyVectorStore(voyClient, embeddings);
+  }
+
   const pdfLoader = new WebPDFLoader(pdfBlob, { parsedItemSeparator: " " });
   const docs = await pdfLoader.load();
 
@@ -97,6 +116,9 @@ const queryVectorStore = async (
     devModeTracer?: LangChainTracer;
   },
 ) => {
+  if (!vectorstore) {
+    throw new Error("Vector store not initialized");
+  }
   const text = messages[messages.length - 1].content;
   const chatHistory = await _formatChatHistoryAsMessages(messages.slice(0, -1));
 
@@ -218,7 +240,7 @@ self.addEventListener("message", async (event: { data: any }) => {
 
   if (event.data.pdf) {
     try {
-      await embedPDF(event.data.pdf);
+      await embedPDF(event.data.pdf, event.data.modelProvider);
     } catch (e: any) {
       self.postMessage({
         type: "error",
@@ -226,18 +248,41 @@ self.addEventListener("message", async (event: { data: any }) => {
       });
       throw e;
     }
-  } else {
+  } else if (event.data.messages) {
     const modelProvider = event.data.modelProvider;
     const modelConfig = event.data.modelConfig;
-    let chatModel: BaseChatModel | LanguageModelLike =
-      modelProvider === "ollama"
-        ? new ChatOllama(modelConfig)
-        : new ChatWebLLM(modelConfig);
-    if (modelProvider === "webllm") {
-      await (chatModel as ChatWebLLM).initialize((event) =>
-        self.postMessage({ type: "init_progress", data: event }),
-      );
-      chatModel = chatModel.bind({ stop: ["\nInstruct:", "Instruct:"] });
+    let chatModel: BaseChatModel | LanguageModelLike;
+    switch (modelProvider) {
+      case "ollama":
+        chatModel = new ChatOllama(modelConfig);
+        break;
+      case "web-llm":
+        chatModel = new ChatWebLLM(modelConfig);
+        await (chatModel as ChatWebLLM).initialize((event) =>
+          self.postMessage({ type: "init_progress", data: event }),
+        );
+        chatModel = chatModel.bind({ stop: ["\nInstruct:", "Instruct:"] });
+        break;
+      case "ai-mask":
+        if (!aiMaskClient) {
+          self.postMessage({
+            type: "error",
+            error: "AIMaskClient has not finished inititializing",
+          });
+          return;
+        }
+        chatModel = new ChatAIMask({
+          ...modelConfig,
+          aiMaskClient,
+        });
+        chatModel = chatModel.bind({ stop: ["\nInstruct:", "Instruct:"] });
+        break;
+      default:
+        self.postMessage({
+          type: "error",
+          error: "Invalid model provider",
+        });
+        throw new Error("Invalid model provider");
     }
     try {
       await queryVectorStore(event.data.messages, {
@@ -262,3 +307,7 @@ self.addEventListener("message", async (event: { data: any }) => {
     data: "OK",
   });
 });
+
+(async () => {
+  aiMaskClient = await AIMaskClient.getWorkerClient();
+})();

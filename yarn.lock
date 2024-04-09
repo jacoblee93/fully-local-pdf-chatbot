@@ -12,6 +12,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@ai-mask/core@npm:^0.7.0":
+  version: 0.7.0
+  resolution: "@ai-mask/core@npm:0.7.0"
+  checksum: 3d85a25046eb10638ac14085557c006cfb516249e52cb09380d78d9146e490de340d43d080e82edd20234cf527ebaa6339051a6ac351c26f1b27faf76e5afc17
+  languageName: node
+  linkType: hard
+
+"@ai-mask/sdk@npm:^0.8.0":
+  version: 0.8.0
+  resolution: "@ai-mask/sdk@npm:0.8.0"
+  dependencies:
+    "@ai-mask/core": ^0.7.0
+  checksum: 88b73634c698186340c3ab3c85c8dad1d6bf61b6c5e5e3b263569f2982ed9dc1c434884a7111f240585e539db663b316040aabb6c47eae0264959692b92fa6c5
+  languageName: node
+  linkType: hard
+
 "@alloc/quick-lru@npm:^5.2.0":
   version: 5.2.0
   resolution: "@alloc/quick-lru@npm:5.2.0"
@@ -2496,6 +2512,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "fully-local-pdf-chatbot@workspace:."
   dependencies:
+    "@ai-mask/sdk": ^0.8.0
     "@langchain/community": ^0.0.40
     "@mlc-ai/web-llm": ^0.2.28
     "@types/node": 20.4.5
