@@ -29,7 +29,7 @@ import { LangChainTracer } from "@langchain/core/tracers/tracer_langchain";
 import { Client } from "langsmith";
 
 import { ChatOllama } from "@langchain/community/chat_models/ollama";
-import { ChatWebLLM } from "./lib/chat_models/webllm";
+import { ChatWebLLM } from "@langchain/community/chat_models/webllm";
 
 const embeddings = new HuggingFaceTransformersEmbeddings({
   modelName: "Xenova/all-MiniLM-L6-v2",
@@ -229,15 +229,15 @@ self.addEventListener("message", async (event: { data: any }) => {
   } else {
     const modelProvider = event.data.modelProvider;
     const modelConfig = event.data.modelConfig;
-    let chatModel: BaseChatModel | LanguageModelLike =
-      modelProvider === "ollama"
-        ? new ChatOllama(modelConfig)
-        : new ChatWebLLM(modelConfig);
+    let chatModel: BaseChatModel | LanguageModelLike;
     if (modelProvider === "webllm") {
-      await (chatModel as ChatWebLLM).initialize((event) =>
+      const webllmModel = new ChatWebLLM(modelConfig);
+      await webllmModel.initialize((event) =>
         self.postMessage({ type: "init_progress", data: event }),
       );
-      chatModel = chatModel.bind({ stop: ["\nInstruct:", "Instruct:"] });
+      chatModel = webllmModel.bind({ stop: ["\nInstruct:", "Instruct:"] });
+    } else {
+      chatModel = new ChatOllama(modelConfig);
     }
     try {
       await queryVectorStore(event.data.messages, {

@@ -6,7 +6,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import { useRef, useState, useEffect } from "react";
 import type { FormEvent } from "react";
 
-import { ChatMessageBubble } from "@/components/ChatMessageBubble";
+import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatWindowMessage } from '@/schema/ChatWindowMessage';
 
 export function ChatWindow(props: {
@@ -35,25 +35,12 @@ export function ChatWindow(props: {
           controller.close();
           return;
         }
-        // Config copied from:
-        // https://github.com/mlc-ai/web-llm/blob/eaaff6a7730b6403810bb4fd2bbc4af113c36050/examples/simple-chat/src/gh-config.js
+        // See https://github.com/mlc-ai/web-llm/blob/main/src/config.ts for a list of available models
         const webLLMConfig = {
-          temperature: 0.1,
-          modelRecord: {
-            "model_url": "https://huggingface.co/mlc-ai/phi-2-q4f32_1-MLC/resolve/main/",
-            "local_id": "Phi2-q4f32_1",
-            "model_lib_url": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/phi-2/phi-2-q4f32_1-ctx2k-webgpu.wasm",
-            "vram_required_MB": 4032.48,
-            "low_resource_required": false,
+          model: "Phi2-q4f32_1",
+          chatOptions: {
+            temperature: 0.1,
           },
-          // {
-          //   "model_url": "https://huggingface.co/mlc-ai/phi-2-q0f16-MLC/resolve/main/",
-          //   "local_id": "Phi2-q0f16",
-          //   "model_lib_url": "https://raw.githubusercontent.com/mlc-ai/binary-mlc-llm-libs/main/phi-2/phi-2-q0f16-ctx2k-webgpu.wasm",
-          //   "vram_required_MB": 11079.47,
-          //   "low_resource_required": false,
-          //   "required_features": ["shader-f16"],
-          // },
         };
         const ollamaConfig = {
           baseUrl: "http://localhost:11435",
@@ -89,7 +76,7 @@ export function ChatWindow(props: {
                 initProgressToastId.current = toast(
                   "Loading model weights... This may take a while",
                   {
-                    progress: e.data.data.progress,
+                    progress: e.data.data.progress || 0.01,
                     theme: "dark"
                   }
                 );
@@ -97,7 +84,7 @@ export function ChatWindow(props: {
                 if (e.data.data.progress === 1) {
                   await new Promise((resolve) => setTimeout(resolve, 2000));
                 }
-                toast.update(initProgressToastId.current, { progress: e.data.data.progress });
+                toast.update(initProgressToastId.current, { progress: e.data.data.progress || 0.01 });
               }
               break
             case "chunk":
