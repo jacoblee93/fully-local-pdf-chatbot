@@ -233,7 +233,7 @@ export function ChatWindow(props: {
               <li>
                 ⚙️
                 <span className="ml-2">
-                  The default LLM is Phi-2 run using <a href="https://webllm.mlc.ai/">WebLLM</a>.
+                  The default LLM is Phi-3 run using <a href="https://webllm.mlc.ai/">WebLLM</a>.
                   The first time you start a chat, the app will automatically download the weights and cache them in your browser.
                 </span>
               </li>

@@ -15,7 +15,7 @@ Users can choose one of the below options to run inference:
 
 ## Browser-only mode
 
-You can run the entire stack your browser via [WebLLM](https://webllm.mlc.ai/). The model used is the small, 2.7B parameter [Phi-2](https://huggingface.co/microsoft/phi-2).
+You can run the entire stack your browser via [WebLLM](https://webllm.mlc.ai/). The model used is the small, 3.8B parameter [Phi-3](https://huggingface.co/microsoft/phi-3).
 
 You don't have to leave the window to set this up - just upload a PDF and go!
 
