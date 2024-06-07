@@ -6,7 +6,7 @@ import { createRetrievalChain } from "langchain/chains/retrieval";
 import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
 import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retriever";
 
-import { WebPDFLoader } from "langchain/document_loaders/web/pdf";
+import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
 
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
 import { VoyVectorStore } from "@langchain/community/vectorstores/voy";
@@ -235,7 +235,7 @@ self.addEventListener("message", async (event: { data: any }) => {
       await webllmModel.initialize((event) =>
         self.postMessage({ type: "init_progress", data: event }),
       );
-      chatModel = webllmModel.bind({ stop: ["\nInstruct:", "Instruct:"] });
+      chatModel = webllmModel.bind({ stop: ["\nInstruct:", "Instruct:", "<hr>"] });
     } else {
       chatModel = new ChatOllama(modelConfig);
     }

@@ -37,7 +37,7 @@ export function ChatWindow(props: {
         }
         // See https://github.com/mlc-ai/web-llm/blob/main/src/config.ts for a list of available models
         const webLLMConfig = {
-          model: "Phi2-q4f32_1",
+          model: "Phi-3-mini-4k-instruct-q4f16_1-MLC",
           chatOptions: {
             temperature: 0.1,
           },

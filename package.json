@@ -13,8 +13,8 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@langchain/community": "^0.2.0",
-    "@mlc-ai/web-llm": "^0.2.35",
+    "@langchain/community": "^0.2.9",
+    "@mlc-ai/web-llm": "^0.2.42",
     "@types/node": "20.4.5",
     "@types/react": "18.2.17",
     "@types/react-dom": "18.2.7",
@@ -23,8 +23,7 @@
     "encoding": "^0.1.13",
     "eslint": "8.46.0",
     "eslint-config-next": "13.4.12",
-    "langchain": "^0.2.0",
-    "langsmith": "^0.1.25",
+    "langchain": "^0.2.5",
     "next": "13.4.12",
     "pdf-parse": "^1.1.1",
     "postcss": "8.4.27",
@@ -39,6 +38,6 @@
     "prettier": "3.0.0"
   },
   "resolutions": {
-    "@langchain/core": "0.2.0"
+    "@langchain/core": "0.2.6"
   }
 }
