@@ -2,7 +2,8 @@
 
 Yes, it's another chat over documents implementation... but this one is entirely local!
 
-It can even run fully in your browser with a small LLM via [WebLLM](https://webllm.mlc.ai/)!
+It can even run fully in your browser with a small LLM via [WebLLM](https://webllm.mlc.ai/) or
+using Chrome's experimental built-in Gemini Nano model!
 
 ![](/public/images/demo_browser_only.gif)
 
@@ -50,12 +51,19 @@ $ set OLLAMA_HOST=127.0.0.1:11435
 ollama pull mistral
 ```
 
+## Built-in Gemini Nano
+
+You can also use the experimental preview of Chrome's built-in Gemini Nano model. You'll need access to the program to use this mode. Install Chrome while following the directions given in the official guide provided to program members, and you
+should be all set!
+
+Note that the built-in Gemini Nano model is quite small and is not tuned for chat, so do not expect good results, especially with multi-turn interactions (yet!).
+
 ## ⚡ Stack
 
 It uses the following:
 
 - [Voy](https://github.com/tantaraio/voy) as the vector store, fully WASM in the browser.
-- [Ollama](https://ollama.ai/) or [WebLLM](https://webllm.mlc.ai/) to run an LLM locally and expose it to the web app.
+- [Ollama](https://ollama.ai/), [WebLLM](https://webllm.mlc.ai/), or [Chrome's built-in Gemini Nano](https://developer.chrome.com/docs/ai/built-in) to run an LLM locally and expose it to the web app.
 - [LangChain.js](https://js.langchain.com) to call the models, perform retrieval, and generally orchestrate all the pieces.
 - [Transformers.js](https://huggingface.co/docs/transformers.js/index) to run open source [Nomic](https://www.nomic.ai/) embeddings in the browser.
   - For higher-quality embeddings, switch to `"nomic-ai/nomic-embed-text-v1"` in `app/worker.ts`.

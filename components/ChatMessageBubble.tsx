@@ -10,7 +10,7 @@ import { Feedback } from 'langsmith';
 
 export function ChatMessageBubble(props: {
   message: ChatWindowMessage;
-  aiEmoji?: string;
+  aiEmoji?: React.JSX.Element;
   onRemovePressed?: () => void;
 }) {
   const { role, content, runId } = props.message;
