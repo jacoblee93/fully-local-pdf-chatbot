@@ -8,7 +8,7 @@ export function MobileWarningOverlay() {
         The local LLMs used for this app are only designed to work on desktop.
         <br />
         <br />
-        Please come back once you're at a computer!
+        Please come back once you&apos;re at a computer!
       </div>
     </div>
   );
