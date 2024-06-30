@@ -71,7 +71,7 @@ const modelListItems: Record<ModelProvider, React.JSX.Element> = {
 
 const emojis: Record<ModelProvider, React.JSX.Element> = {
   ollama: <span>🦙</span>,
-  webllm: <span>🏠</span>,
+  webllm: <span>🌐</span>,
   chrome_ai: <span>♊</span>
 }
 

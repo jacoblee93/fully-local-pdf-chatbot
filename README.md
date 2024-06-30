@@ -14,7 +14,7 @@ You can see a live version at https://webml-demo.vercel.app.
 
 Users can choose one of the below options to run inference:
 
-## 🏠 Browser-only mode
+## 🌐 Fully in-browser (WebLLM)
 
 You can run the entire stack your browser via [WebLLM](https://webllm.mlc.ai/). The model used is the small, 3.8B parameter [Phi-3](https://huggingface.co/microsoft/phi-3).
 
