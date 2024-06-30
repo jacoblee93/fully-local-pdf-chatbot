@@ -62,7 +62,7 @@ const modelListItems: Record<ModelProvider, React.JSX.Element> = {
       <li>
         🚧
         <span className="ml-2">
-          Note that the built-in Gemini Nano model is quite small and is not tuned for chat, so do not expect good results, especially with multi-turn interactions (yet!).
+          Note that the built-in Gemini Nano model is quite small, experimental, and not chat tuned, so results may vary!
         </span>
       </li>
     </>
@@ -121,7 +121,9 @@ export function ChatWindow(props: {
               temperature: 0.1,
             },
           },
-          chrome_ai: {},
+          chrome_ai: {
+            temperature: 0,
+          },
         };
         const payload: Record<string, any> = {
           messages,
@@ -354,7 +356,7 @@ export function ChatWindow(props: {
           <li>
             🗺️
             <span className="ml-2">
-              The default embeddings are <pre className="inline-flex px-2 py-1 my-2 rounded">&quot;Xenova/all-MiniLM-L6-v2&quot;</pre>. For higher-quality embeddings on machines that can handle it, switch to <pre className="inline-flex px-2 py-1 my-2 rounded">nomic-ai/nomic-embed-text-v1</pre> in <pre className="inline-flex px-2 py-1 my-2 rounded">app/worker.ts</pre>.
+              The default embeddings are <pre className="inline-flex px-2 py-1 my-2 rounded">&quot;Xenova/all-MiniLM-L6-v2&quot;</pre>. For higher-quality, slower embeddings, switch to <pre className="inline-flex px-2 py-1 my-2 rounded">nomic-ai/nomic-embed-text-v1</pre> in <pre className="inline-flex px-2 py-1 my-2 rounded">app/worker.ts</pre>.
             </span>
           </li>
           <li className="hidden text-l md:block">

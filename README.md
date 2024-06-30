@@ -56,7 +56,7 @@ ollama pull mistral
 You can also use the experimental preview of Chrome's built-in Gemini Nano model. You'll need access to the program to use this mode. Install Chrome while following the directions given in the official guide provided to program members, and you
 should be all set!
 
-Note that the built-in Gemini Nano model is quite small and is not tuned for chat, so do not expect good results, especially with multi-turn interactions (yet!).
+Note that the built-in Gemini Nano model is quite small, experimental, and not chat tuned, so results may vary!
 
 ## ⚡ Stack
 
