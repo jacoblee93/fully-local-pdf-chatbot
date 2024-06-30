@@ -30,6 +30,7 @@ import { Client } from "langsmith";
 
 import { ChatOllama } from "@langchain/community/chat_models/ollama";
 import { ChatWebLLM } from "@langchain/community/chat_models/webllm";
+import { ChromeAI } from "@langchain/community/experimental/llms/chrome_ai";
 
 const embeddings = new HuggingFaceTransformersEmbeddings({
   modelName: "Xenova/all-MiniLM-L6-v2",
@@ -85,7 +86,7 @@ const _formatChatHistoryAsMessages = async (
   });
 };
 
-const queryVectorStore = async (
+const generateRAGResponse = async (
   messages: ChatWindowMessage[],
   {
     chatModel,
@@ -93,7 +94,7 @@ const queryVectorStore = async (
     devModeTracer,
   }: {
     chatModel: LanguageModelLike;
-    modelProvider: "ollama" | "webllm";
+    modelProvider: "ollama" | "webllm" | "chrome_ai";
     devModeTracer?: LangChainTracer;
   },
 ) => {
@@ -235,12 +236,17 @@ self.addEventListener("message", async (event: { data: any }) => {
       await webllmModel.initialize((event) =>
         self.postMessage({ type: "init_progress", data: event }),
       );
-      chatModel = webllmModel.bind({ stop: ["\nInstruct:", "Instruct:", "<hr>"] });
+      // Best guess at Phi-3 tokens
+      chatModel = webllmModel.bind({
+        stop: ["\nInstruct:", "Instruct:", "<hr>", "\n<hr>"],
+      });
+    } else if (modelProvider === "chrome_ai") {
+      chatModel = new ChromeAI(modelConfig);
     } else {
       chatModel = new ChatOllama(modelConfig);
     }
     try {
-      await queryVectorStore(event.data.messages, {
+      await generateRAGResponse(event.data.messages, {
         devModeTracer,
         modelProvider,
         chatModel,
