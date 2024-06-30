@@ -59,6 +59,12 @@ const modelListItems: Record<ModelProvider, React.JSX.Element> = {
           It uses the experimental preview of <code>Chrome's built-in Gemini Nano</code> model. You'll need access to the program to use this mode.
         </span>
       </li>
+      <li>
+        🚧
+        <span className="ml-2">
+          Note that the built-in Gemini Nano model is quite small and is not tuned for chat, so do not expect good results, especially with multi-turn interactions (yet!).
+        </span>
+      </li>
     </>
   ),
 };
