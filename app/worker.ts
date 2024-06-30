@@ -12,7 +12,6 @@ import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddin
 import { VoyVectorStore } from "@langchain/community/vectorstores/voy";
 import {
   ChatPromptTemplate,
-  MessagesPlaceholder,
   PromptTemplate,
 } from "@langchain/core/prompts";
 import { RunnableSequence, RunnablePick } from "@langchain/core/runnables";
@@ -54,6 +53,18 @@ REMEMBER: If there is no relevant information within the context, just say "Hmm,
 const WEBLLM_RESPONSE_SYSTEM_TEMPLATE = `You are an experienced researcher, expert at interpreting and answering questions based on provided sources. Using the provided context, answer the user's question to the best of your ability using the resources provided.
 Generate a concise answer for a given question based solely on the provided search results. You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text, stay focused, and stop generating when you have answered the question.
 If there is nothing in the context relevant to the question at hand, just say "Hmm, I'm not sure." Don't try to make up an answer.`;
+
+const CHROME_AI_SYSTEM_TEMPLATE = `You are an AI assistant acting as an experienced researcher, expert at interpreting and answering questions based on provided sources. Using the provided context, answer the user's question to the best of your ability using the resources provided.
+Generate a concise answer for a given question based solely on the provided search results. You must only use information from the provided search results. Use an unbiased and journalistic tone. Combine search results together into a coherent answer. Do not repeat text, stay focused, and don't make up answers.
+
+When responding, use the following documents as context:\n<context>\n{context}\n</context>
+
+You do not need to exactly cite your sources from the above documents.
+
+{chat_history}
+
+Human: {input}
+AI: `;
 
 const embedPDF = async (pdfBlob: Blob) => {
   const pdfLoader = new WebPDFLoader(pdfBlob, { parsedItemSeparator: " " });
@@ -101,34 +112,43 @@ const generateRAGResponse = async (
   const text = messages[messages.length - 1].content;
   const chatHistory = await _formatChatHistoryAsMessages(messages.slice(0, -1));
 
-  const responseChainPrompt =
-    modelProvider === "ollama"
-      ? ChatPromptTemplate.fromMessages<{
-          context: string;
-          chat_history: BaseMessage[];
-          question: string;
-        }>([
-          ["system", OLLAMA_RESPONSE_SYSTEM_TEMPLATE],
-          new MessagesPlaceholder("chat_history"),
-          ["user", `{input}`],
-        ])
-      : ChatPromptTemplate.fromMessages<{
-          context: string;
-          chat_history: BaseMessage[];
-          question: string;
-        }>([
-          ["system", WEBLLM_RESPONSE_SYSTEM_TEMPLATE],
-          [
-            "user",
-            "When responding to me, use the following documents as context:\n<context>\n{context}\n</context>",
-          ],
-          [
-            "ai",
-            "Understood! I will use the documents between the above <context> tags as context when answering your next questions.",
-          ],
-          new MessagesPlaceholder("chat_history"),
-          ["user", `{input}`],
-        ]);
+  let responseChainPrompt;
+  if (modelProvider === "ollama") {
+    responseChainPrompt = ChatPromptTemplate.fromMessages<{
+      context: string;
+      chat_history: BaseMessage[];
+      question: string;
+    }>([
+      ["system", OLLAMA_RESPONSE_SYSTEM_TEMPLATE],
+      ["placeholder", "{chat_history}"],
+      ["user", `{input}`],
+    ])
+  } else if (modelProvider === "webllm") {
+    responseChainPrompt = ChatPromptTemplate.fromMessages<{
+      context: string;
+      chat_history: BaseMessage[];
+      question: string;
+    }>([
+      ["system", WEBLLM_RESPONSE_SYSTEM_TEMPLATE],
+      [
+        "user",
+        "When responding to me, use the following documents as context:\n<context>\n{context}\n</context>",
+      ],
+      [
+        "ai",
+        "Understood! I will use the documents between the above <context> tags as context when answering your next questions.",
+      ],
+      ["placeholder", "{chat_history}"],
+      ["user", `{input}`],
+    ]);
+  } else {
+    responseChainPrompt = ChatPromptTemplate.fromMessages([
+      ["system", CHROME_AI_SYSTEM_TEMPLATE],
+      ["placeholder", "{chat_history}"],
+      ["user", "{input}"],
+    ]);
+    responseChainPrompt = PromptTemplate.fromTemplate(CHROME_AI_SYSTEM_TEMPLATE);
+  }
 
   const documentChain = await createStuffDocumentsChain({
     llm: chatModel,
@@ -138,23 +158,28 @@ const generateRAGResponse = async (
     ),
   });
 
-  const historyAwarePrompt =
-    modelProvider === "ollama"
-      ? ChatPromptTemplate.fromMessages([
-          new MessagesPlaceholder("chat_history"),
-          ["user", "{input}"],
-          [
-            "user",
-            "Given the above conversation, generate a natural language search query to look up in order to get information relevant to the conversation. Do not respond with anything except the query.",
-          ],
-        ])
-      : ChatPromptTemplate.fromMessages([
-          new MessagesPlaceholder("chat_history"),
-          [
-            "user",
-            "Given the above conversation, rephrase the following question into a standalone, natural language query with important keywords that a researcher could later pass into a search engine to get information relevant to the conversation. Do not respond with anything except the query.\n\n<question_to_rephrase>\n{input}\n</question_to_rephrase>",
-          ],
-        ]);
+  let historyAwarePrompt;
+  if (modelProvider === "ollama") {
+    historyAwarePrompt = ChatPromptTemplate.fromMessages([
+      ["placeholder", "{chat_history}"],
+      ["user", "{input}"],
+      [
+        "user",
+        "Given the above conversation, generate a natural language search query to look up in order to get information relevant to the conversation. Do not respond with anything except the query.",
+      ],
+    ]);
+  } else if (modelProvider === "webllm") {
+    historyAwarePrompt = ChatPromptTemplate.fromMessages([
+      ["placeholder", "{chat_history}"],
+      [
+        "user",
+        "Given the above conversation, rephrase the following question into a standalone, natural language query with important keywords that a researcher could later pass into a search engine to get information relevant to the conversation. Do not respond with anything except the query.\n\n<question_to_rephrase>\n{input}\n</question_to_rephrase>",
+      ],
+    ]);
+  } else {
+    historyAwarePrompt = PromptTemplate.fromTemplate(`{chat_history}
+Given the above conversation, rephrase the following question into a standalone, natural language query with important keywords that a researcher could later pass into a search engine to get information relevant to the conversation. Do not respond with anything except the query.\n\n<question_to_rephrase>\n{input}\n</question_to_rephrase>`);
+  }
 
   const historyAwareRetrieverChain = await createHistoryAwareRetriever({
     llm: chatModel,
@@ -167,15 +192,17 @@ const generateRAGResponse = async (
     retriever: historyAwareRetrieverChain,
   });
 
-  const fullChain = RunnableSequence.from([
-    retrievalChain,
-    new RunnablePick("answer"),
-  ]);
+  // retrievalChain streams back an object with a few fields.
+  // We only want to stream back the answer, so pick it out.
+  const fullChain = retrievalChain.pick("answer");
 
+  let formattedChatHistory = modelProvider === "chrome_ai" ? chatHistory.map((message) => {
+    return `${message._getType()}: ${message.content}`;
+  }).join("\n") : chatHistory;
   const stream = await fullChain.stream(
     {
       input: text,
-      chat_history: chatHistory,
+      chat_history: formattedChatHistory,
     },
     {
       callbacks: devModeTracer !== undefined ? [devModeTracer] : [],
