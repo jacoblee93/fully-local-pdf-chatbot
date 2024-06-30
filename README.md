@@ -14,7 +14,7 @@ You can see a live version at https://webml-demo.vercel.app.
 
 Users can choose one of the below options to run inference:
 
-## Browser-only mode
+## 🏠 Browser-only mode
 
 You can run the entire stack your browser via [WebLLM](https://webllm.mlc.ai/). The model used is the small, 3.8B parameter [Phi-3](https://huggingface.co/microsoft/phi-3).
 
@@ -22,7 +22,7 @@ You don't have to leave the window to set this up - just upload a PDF and go!
 
 Note that the first time you start a chat, the app will download and cache the model weights. This download is several GB in size and may take a little while, so make sure you have a good internet connection!
 
-## Ollama
+## 🦙 Ollama
 
 You can run more powerful, general models outside the browser using [Ollama's desktop app](https://ollama.ai). Users will need to download and set up then run the following commands to allow the site access to a locally running Mistral instance:
 
@@ -51,7 +51,7 @@ $ set OLLAMA_HOST=127.0.0.1:11435
 ollama pull mistral
 ```
 
-## Built-in Gemini Nano
+## ♊ Built-in Gemini Nano
 
 You can also use the experimental preview of Chrome's built-in Gemini Nano model. You'll need access to the program to use this mode. Install Chrome while following the directions given in the official guide provided to program members, and you
 should be all set!
