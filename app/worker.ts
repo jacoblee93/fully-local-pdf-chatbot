@@ -10,10 +10,7 @@ import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
 
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
 import { VoyVectorStore } from "@langchain/community/vectorstores/voy";
-import {
-  ChatPromptTemplate,
-  PromptTemplate,
-} from "@langchain/core/prompts";
+import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
 import { RunnableSequence, RunnablePick } from "@langchain/core/runnables";
 import {
   AIMessage,
@@ -122,7 +119,7 @@ const generateRAGResponse = async (
       ["system", OLLAMA_RESPONSE_SYSTEM_TEMPLATE],
       ["placeholder", "{chat_history}"],
       ["user", `{input}`],
-    ])
+    ]);
   } else if (modelProvider === "webllm") {
     responseChainPrompt = ChatPromptTemplate.fromMessages<{
       context: string;
@@ -147,7 +144,9 @@ const generateRAGResponse = async (
       ["placeholder", "{chat_history}"],
       ["user", "{input}"],
     ]);
-    responseChainPrompt = PromptTemplate.fromTemplate(CHROME_AI_SYSTEM_TEMPLATE);
+    responseChainPrompt = PromptTemplate.fromTemplate(
+      CHROME_AI_SYSTEM_TEMPLATE,
+    );
   }
 
   const documentChain = await createStuffDocumentsChain({
@@ -196,9 +195,14 @@ Given the above conversation, rephrase the following question into a standalone,
   // We only want to stream back the answer, so pick it out.
   const fullChain = retrievalChain.pick("answer");
 
-  let formattedChatHistory = modelProvider === "chrome_ai" ? chatHistory.map((message) => {
-    return `${message._getType()}: ${message.content}`;
-  }).join("\n") : chatHistory;
+  let formattedChatHistory =
+    modelProvider === "chrome_ai"
+      ? chatHistory
+          .map((message) => {
+            return `${message._getType()}: ${message.content}`;
+          })
+          .join("\n")
+      : chatHistory;
   const stream = await fullChain.stream(
     {
       input: text,
