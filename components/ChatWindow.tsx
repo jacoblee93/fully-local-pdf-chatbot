@@ -56,7 +56,7 @@ const modelListItems: Record<ModelProvider, React.JSX.Element> = {
       <li>
         ♊
         <span className="ml-2">
-          It uses the experimental preview of <code>Chrome's built-in Gemini Nano</code> model. You'll need access to the program to use this mode.
+          It uses the experimental preview of <code>Chrome&apos;s built-in Gemini Nano</code> model. You will need access to the program to use this mode.
         </span>
       </li>
       <li>
