@@ -5,7 +5,7 @@ Yes, it's another chat over documents implementation... but this one is entirely
 It can even run fully in your browser with a small LLM via [WebLLM](https://webllm.mlc.ai/) - or, if you have
 access to the closed preview, using [Chrome's experimental built-in Gemini Nano model](https://developer.chrome.com/docs/ai/built-in)!
 
-![](/public/images/demo_browser_only.gif)
+![](/public/images/demo_builtin_chrome.gif)
 
 It's a Next.js app that read the content of an uploaded PDF, chunks it, adds it to a vector store, and
 performs RAG, all client side. You can even turn off your WiFi after the site loads.
