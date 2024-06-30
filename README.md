@@ -2,13 +2,8 @@
 
 Yes, it's another chat over documents implementation... but this one is entirely local!
 
-<<<<<<< HEAD
-It can even run fully in your browser with a small LLM via [WebLLM](https://webllm.mlc.ai/) or
-using Chrome's experimental built-in Gemini Nano model!
-=======
 It can even run fully in your browser with a small LLM via [WebLLM](https://webllm.mlc.ai/) - or, if you have
 access to the closed preview, using [Chrome's experimental built-in Gemini Nano model](https://developer.chrome.com/docs/ai/built-in)!
->>>>>>> a27c24acd5f8fb8c086c5187ac99e50165e771dd
 
 ![](/public/images/demo_browser_only.gif)
 
@@ -56,16 +51,12 @@ $ set OLLAMA_HOST=127.0.0.1:11435
 ollama pull mistral
 ```
 
-<<<<<<< HEAD
-## Built-in Gemini Nano
-=======
 ## ♊ Built-in Gemini Nano
->>>>>>> a27c24acd5f8fb8c086c5187ac99e50165e771dd
 
 You can also use the experimental preview of Chrome's built-in Gemini Nano model. You'll need access to the program to use this mode. Install Chrome while following the directions given in the official guide provided to program members, and you
 should be all set!
 
-Note that the built-in Gemini Nano model is quite small and is not tuned for chat, so do not expect good results, especially with multi-turn interactions (yet!).
+Note that the built-in Gemini Nano model is quite small, experimental, and not chat tuned, so results may vary!
 
 ## ⚡ Stack
 
