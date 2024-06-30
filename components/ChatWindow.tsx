@@ -9,6 +9,7 @@ import { useSearchParams } from "next/navigation";
 
 import { ChatMessageBubble } from '@/components/ChatMessageBubble';
 import { ChatWindowMessage } from '@/schema/ChatWindowMessage';
+import { MobileWarningOverlay } from './MobileWarningOverlay';
 
 type ModelProvider = "ollama" | "webllm" | "chrome_ai";
 
@@ -283,6 +284,7 @@ export function ChatWindow(props: {
 
   const choosePDFComponent = (
     <>
+      <MobileWarningOverlay></MobileWarningOverlay>
       <div className="p-4 md:p-8 rounded bg-[#25252d] w-full max-h-[85%] overflow-hidden flex flex-col">
         <h1 className="text-3xl md:text-4xl mb-2 ml-auto mr-auto flex justify-center max-h-[36px]">
           {emoji}<span className="mx-2">{titleTexts[modelProvider]}</span>{emoji}
