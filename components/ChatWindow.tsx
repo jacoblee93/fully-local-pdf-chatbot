@@ -63,7 +63,7 @@ const modelListItems: Record<ModelProvider, React.JSX.Element> = {
       <li>
         🚧
         <span className="ml-2">
-          Note that the built-in Gemini Nano model is quite small, experimental, and not chat tuned, so results may vary!
+          Note that the built-in Gemini Nano model is experimental and is not chat tuned, so results may vary!
         </span>
       </li>
     </>
