@@ -117,7 +117,7 @@ export function ChatWindow(props: {
           },
           webllm: {
             // See https://github.com/mlc-ai/web-llm/blob/main/src/config.ts for a list of available models
-            model: "Phi-3-mini-4k-instruct-q4f16_1-MLC",
+            model: "Phi-3.5-mini-instruct-q4f16_1-MLC",
             chatOptions: {
               temperature: 0.1,
             },
