@@ -39,7 +39,8 @@
   },
   "resolutions": {
     "@langchain/core": "0.2.28",
-    "voy-search": "0.6.2"
+    "voy-search": "0.6.2",
+    "@mlc-ai/web-llm": "^0.2.62"
   },
   "packageManager": "yarn@3.5.1"
 }
