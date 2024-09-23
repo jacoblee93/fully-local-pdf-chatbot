@@ -11,7 +11,6 @@ import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
 import { VoyVectorStore } from "@langchain/community/vectorstores/voy";
 import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
-import { RunnableSequence, RunnablePick } from "@langchain/core/runnables";
 import {
   AIMessage,
   type BaseMessage,
@@ -24,7 +23,7 @@ import type { LanguageModelLike } from "@langchain/core/language_models/base";
 import { LangChainTracer } from "@langchain/core/tracers/tracer_langchain";
 import { Client } from "langsmith";
 
-import { ChatOllama } from "@langchain/community/chat_models/ollama";
+import { ChatOllama } from "@langchain/ollama";
 import { ChatWebLLM } from "@langchain/community/chat_models/webllm";
 import { ChromeAI } from "@langchain/community/experimental/llms/chrome_ai";
 
@@ -60,8 +59,8 @@ You do not need to exactly cite your sources from the above documents.
 
 {chat_history}
 
-Human: {input}
-AI: `;
+human: {input}
+ai: `;
 
 const embedPDF = async (pdfBlob: Blob) => {
   const pdfLoader = new WebPDFLoader(pdfBlob, { parsedItemSeparator: " " });
@@ -139,11 +138,6 @@ const generateRAGResponse = async (
       ["user", `{input}`],
     ]);
   } else {
-    responseChainPrompt = ChatPromptTemplate.fromMessages([
-      ["system", CHROME_AI_SYSTEM_TEMPLATE],
-      ["placeholder", "{chat_history}"],
-      ["user", "{input}"],
-    ]);
     responseChainPrompt = PromptTemplate.fromTemplate(
       CHROME_AI_SYSTEM_TEMPLATE,
     );

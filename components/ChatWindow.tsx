@@ -122,9 +122,7 @@ export function ChatWindow(props: {
               temperature: 0.1,
             },
           },
-          chrome_ai: {
-            temperature: 0,
-          },
+          chrome_ai: {},
         };
         const payload: Record<string, any> = {
           messages,
