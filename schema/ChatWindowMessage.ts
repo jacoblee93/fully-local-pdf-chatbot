@@ -1,6 +1,6 @@
 export type ChatWindowMessage = {
   content: string;
-  role: "human" | "ai";
+  role: "user" | "assistant";
   runId?: string;
   traceUrl?: string;
 }

@@ -40,7 +40,7 @@ const modelListItems: Record<ModelProvider, React.JSX.Element> = {
       <li>
         ⚙️
         <span className="ml-2">
-          The default LLM is <code>Phi-3</code> run using <a href="https://webllm.mlc.ai/">WebLLM</a>.
+          The default LLM is <code>Phi-3.5</code> run using <a href="https://webllm.mlc.ai/">WebLLM</a>.
           The first time you start a chat, the app will automatically download the weights and cache them in your browser.
         </span>
       </li>
@@ -194,7 +194,7 @@ export function ChatWindow(props: {
 
     const initialInput = input;
     const initialMessages = [...messages];
-    const newMessages = [...initialMessages, { role: "human" as const, content: input }];
+    const newMessages = [...initialMessages, { role: "user" as const, content: input }];
 
     setMessages(newMessages)
     setIsLoading(true);
@@ -208,7 +208,7 @@ export function ChatWindow(props: {
 
       const aiResponseMessage: ChatWindowMessage = {
         content: "",
-        role: "ai" as const,
+        role: "assistant" as const,
       };
 
       setMessages([...newMessages, aiResponseMessage]);
@@ -242,10 +242,7 @@ export function ChatWindow(props: {
   }, []);
 
   async function embedPDF (e: FormEvent<HTMLFormElement>) {
-    console.log(e);
-    console.log(selectedPDF);
     e.preventDefault();
-    // const reader = new FileReader();
     if (selectedPDF === null) {
       toast(`You must select a file to embed.`, {
         theme: "dark",
@@ -298,7 +295,7 @@ export function ChatWindow(props: {
                 onChange={() => {
                   const params = new URLSearchParams(window.location.search);
                   params.set("provider", "ollama");
-                  window.location.search = params.toString();
+                  history.pushState({}, "",  "/?" + params.toString());
                   setModelProvider("ollama");
                 }} />
               <span className="relative inline-flex items-center h-full py-2 pr-2 space-x-2 text-sm pl-2 peer-checked:text-black peer-checked:bg-blue-200">
@@ -314,11 +311,11 @@ export function ChatWindow(props: {
                 onChange={() => {
                   const params = new URLSearchParams(window.location.search);
                   params.set("provider", "webllm");
-                  window.location.search = params.toString();
+                  history.pushState({}, "",  "/?" + params.toString());
                   setModelProvider("webllm");
                 }} />
               <span className="relative inline-flex items-center h-full py-2 pr-2 space-x-2 text-sm pl-2 peer-checked:text-black peer-checked:bg-green-200">
-                <span>{emojis["webllm"]} WebLLM (Phi-3)</span>
+                <span>{emojis["webllm"]} WebLLM (Phi-3.5)</span>
               </span>
             </label>
             <label htmlFor="chrome_ai" className="cursor-pointer">
@@ -330,7 +327,7 @@ export function ChatWindow(props: {
                 onChange={() => {
                   const params = new URLSearchParams(window.location.search);
                   params.set("provider", "chrome_ai");
-                  window.location.search = params.toString();
+                  history.pushState({}, "",  "/?" + params.toString());
                   setModelProvider("chrome_ai");
                 }} />
               <span className="relative inline-flex items-center h-full py-2 pr-2 space-x-2 text-sm pl-2 peer-checked:text-black peer-checked:bg-indigo-200">

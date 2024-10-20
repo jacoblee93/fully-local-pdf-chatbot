@@ -16,10 +16,10 @@ export function ChatMessageBubble(props: {
   const { role, content, runId } = props.message;
 
   const colorClassName =
-    role === "human" ? "bg-sky-600" : "bg-slate-50 text-black";
+    role === "user" ? "bg-sky-600" : "bg-slate-50 text-black";
   const alignmentClassName =
-    role === "human" ? "ml-auto" : "mr-auto";
-  const prefix = role === "human" ? "🧑" : props.aiEmoji;
+    role === "user" ? "ml-auto" : "mr-auto";
+  const prefix = role === "user" ? "🧑" : props.aiEmoji;
 
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);

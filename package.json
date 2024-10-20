@@ -13,8 +13,9 @@
     "node": ">=18"
   },
   "dependencies": {
-    "@langchain/community": "^0.3.2",
-    "@langchain/core": "^0.3.3",
+    "@langchain/community": "^0.3.7",
+    "@langchain/core": "^0.3.13",
+    "@langchain/langgraph": "^0.2.16",
     "@langchain/ollama": "^0.1.0",
     "@mlc-ai/web-llm": "^0.2.62",
     "@types/node": "20.4.5",
@@ -26,6 +27,7 @@
     "eslint": "8.46.0",
     "eslint-config-next": "13.4.12",
     "langchain": "^0.3.2",
+    "langsmith": "^0.1.66",
     "next": "13.4.12",
     "pdf-parse": "^1.1.1",
     "postcss": "8.4.27",

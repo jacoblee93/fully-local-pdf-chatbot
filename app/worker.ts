@@ -2,20 +2,18 @@ import { ChatWindowMessage } from "@/schema/ChatWindowMessage";
 
 import { Voy as VoyClient } from "voy-search";
 
-import { createRetrievalChain } from "langchain/chains/retrieval";
-import { createStuffDocumentsChain } from "langchain/chains/combine_documents";
-import { createHistoryAwareRetriever } from "langchain/chains/history_aware_retriever";
+import {
+  Annotation,
+  MessagesAnnotation,
+  StateGraph,
+} from "@langchain/langgraph/web";
 
 import { WebPDFLoader } from "@langchain/community/document_loaders/web/pdf";
 
 import { HuggingFaceTransformersEmbeddings } from "@langchain/community/embeddings/hf_transformers";
 import { VoyVectorStore } from "@langchain/community/vectorstores/voy";
 import { ChatPromptTemplate, PromptTemplate } from "@langchain/core/prompts";
-import {
-  AIMessage,
-  type BaseMessage,
-  HumanMessage,
-} from "@langchain/core/messages";
+import { type BaseMessage } from "@langchain/core/messages";
 import { RecursiveCharacterTextSplitter } from "langchain/text_splitter";
 import type { BaseChatModel } from "@langchain/core/language_models/chat_models";
 import type { LanguageModelLike } from "@langchain/core/language_models/base";
@@ -26,6 +24,9 @@ import { Client } from "langsmith";
 import { ChatOllama } from "@langchain/ollama";
 import { ChatWebLLM } from "@langchain/community/chat_models/webllm";
 import { ChromeAI } from "@langchain/community/experimental/llms/chrome_ai";
+import { Document } from "@langchain/core/documents";
+import { RunnableConfig } from "@langchain/core/runnables";
+import { BaseLLM } from "@langchain/core/language_models/llms";
 
 const embeddings = new HuggingFaceTransformersEmbeddings({
   modelName: "Xenova/all-MiniLM-L6-v2",
@@ -57,10 +58,8 @@ When responding, use the following documents as context:\n<context>\n{context}\n
 
 You do not need to exactly cite your sources from the above documents.
 
-{chat_history}
-
-human: {input}
-ai: `;
+{conversation_turns}
+assistant: `;
 
 const embedPDF = async (pdfBlob: Blob) => {
   const pdfLoader = new WebPDFLoader(pdfBlob, { parsedItemSeparator: " " });
@@ -81,138 +80,221 @@ const embedPDF = async (pdfBlob: Blob) => {
   await vectorstore.addDocuments(splitDocs);
 };
 
-const _formatChatHistoryAsMessages = async (
-  chatHistory: ChatWindowMessage[],
-) => {
-  return chatHistory.map((chatMessage) => {
-    if (chatMessage.role === "human") {
-      return new HumanMessage(chatMessage.content);
-    } else {
-      return new AIMessage(chatMessage.content);
-    }
-  });
-};
-
 const generateRAGResponse = async (
   messages: ChatWindowMessage[],
   {
-    chatModel,
+    model,
     modelProvider,
     devModeTracer,
   }: {
-    chatModel: LanguageModelLike;
+    model: LanguageModelLike;
     modelProvider: "ollama" | "webllm" | "chrome_ai";
     devModeTracer?: LangChainTracer;
   },
 ) => {
-  const text = messages[messages.length - 1].content;
-  const chatHistory = await _formatChatHistoryAsMessages(messages.slice(0, -1));
-
-  let responseChainPrompt;
-  if (modelProvider === "ollama") {
-    responseChainPrompt = ChatPromptTemplate.fromMessages<{
-      context: string;
-      chat_history: BaseMessage[];
-      question: string;
-    }>([
-      ["system", OLLAMA_RESPONSE_SYSTEM_TEMPLATE],
-      ["placeholder", "{chat_history}"],
-      ["user", `{input}`],
-    ]);
-  } else if (modelProvider === "webllm") {
-    responseChainPrompt = ChatPromptTemplate.fromMessages<{
-      context: string;
-      chat_history: BaseMessage[];
-      question: string;
-    }>([
-      ["system", WEBLLM_RESPONSE_SYSTEM_TEMPLATE],
-      [
-        "user",
-        "When responding to me, use the following documents as context:\n<context>\n{context}\n</context>",
-      ],
-      [
-        "ai",
-        "Understood! I will use the documents between the above <context> tags as context when answering your next questions.",
-      ],
-      ["placeholder", "{chat_history}"],
-      ["user", `{input}`],
-    ]);
-  } else {
-    responseChainPrompt = PromptTemplate.fromTemplate(
-      CHROME_AI_SYSTEM_TEMPLATE,
-    );
-  }
-
-  const documentChain = await createStuffDocumentsChain({
-    llm: chatModel,
-    prompt: responseChainPrompt,
-    documentPrompt: PromptTemplate.fromTemplate(
-      `<doc>\n{page_content}\n</doc>`,
-    ),
+  const RAGStateAnnotation = Annotation.Root({
+    ...MessagesAnnotation.spec,
+    rephrasedQuestion: Annotation<string>,
+    sourceDocuments: Annotation<Document[]>,
   });
 
-  let historyAwarePrompt;
-  if (modelProvider === "ollama") {
-    historyAwarePrompt = ChatPromptTemplate.fromMessages([
-      ["placeholder", "{chat_history}"],
-      ["user", "{input}"],
-      [
-        "user",
-        "Given the above conversation, generate a natural language search query to look up in order to get information relevant to the conversation. Do not respond with anything except the query.",
-      ],
-    ]);
-  } else if (modelProvider === "webllm") {
-    historyAwarePrompt = ChatPromptTemplate.fromMessages([
-      ["placeholder", "{chat_history}"],
-      [
-        "user",
-        "Given the above conversation, rephrase the following question into a standalone, natural language query with important keywords that a researcher could later pass into a search engine to get information relevant to the conversation. Do not respond with anything except the query.\n\n<question_to_rephrase>\n{input}\n</question_to_rephrase>",
-      ],
-    ]);
-  } else {
-    historyAwarePrompt = PromptTemplate.fromTemplate(`{chat_history}
+  const rephraseQuestion = async (
+    state: typeof RAGStateAnnotation.State,
+    config: RunnableConfig,
+  ) => {
+    const originalQuery = state.messages.at(-1)?.content as string;
+    let formattedPrompt;
+    if (modelProvider === "ollama") {
+      const rephrasePrompt = ChatPromptTemplate.fromMessages([
+        ["placeholder", "{messages}"],
+        [
+          "user",
+          "Given the above conversation, generate a natural language search query to look up in order to get information relevant to the conversation. Do not respond with anything except the query.",
+        ],
+      ]);
+      formattedPrompt = await rephrasePrompt.invoke(
+        {
+          messages: state.messages,
+          input: originalQuery,
+        },
+        config,
+      );
+    } else if (modelProvider === "webllm") {
+      const rephrasePrompt = ChatPromptTemplate.fromMessages([
+        ["placeholder", "{messages}"],
+        [
+          "user",
+          "Given the above conversation, rephrase the following question into a standalone, natural language query with important keywords that a researcher could later pass into a search engine to get information relevant to the conversation. Do not respond with anything except the query.\n\n<question_to_rephrase>\n{input}\n</question_to_rephrase>",
+        ],
+      ]);
+      formattedPrompt = await rephrasePrompt.invoke(
+        {
+          messages: state.messages,
+          input: originalQuery,
+        },
+        config,
+      );
+    } else {
+      const rephrasePrompt = PromptTemplate.fromTemplate(`{conversation_turns}
 Given the above conversation, rephrase the following question into a standalone, natural language query with important keywords that a researcher could later pass into a search engine to get information relevant to the conversation. Do not respond with anything except the query.\n\n<question_to_rephrase>\n{input}\n</question_to_rephrase>`);
-  }
+      const conversationTurns = state.messages
+        .map((message) => {
+          const role = message.getType() === "ai" ? "assistant" : "user";
+          return `${role}: ${message.content}`;
+        })
+        .join("\n");
+      formattedPrompt = await rephrasePrompt.invoke(
+        {
+          conversation_turns: conversationTurns,
+          input: originalQuery,
+        },
+        config,
+      );
+    }
+    const response = await model.invoke(formattedPrompt, config);
+    // ChromeAI is a text-in, text-out LLM and we therefore must wrap it in a message object
+    if (typeof response === "string") {
+      return { rephrasedQuestion: response };
+    } else {
+      return { rephrasedQuestion: response.content };
+    }
+  };
 
-  const historyAwareRetrieverChain = await createHistoryAwareRetriever({
-    llm: chatModel,
-    retriever: vectorstore.asRetriever(),
-    rephrasePrompt: historyAwarePrompt,
-  });
+  const retrieveSourceDocuments = async (
+    state: typeof RAGStateAnnotation.State,
+    config: RunnableConfig,
+  ) => {
+    let retrieverQuery: string;
+    if (state.messages.length > 1) {
+      retrieverQuery = state.rephrasedQuestion;
+    } else {
+      retrieverQuery = state.messages.at(-1)?.content as string;
+    }
+    const retriever = vectorstore.asRetriever();
+    const docs = await retriever.invoke(retrieverQuery, config);
+    return {
+      sourceDocuments: docs,
+    };
+  };
 
-  const retrievalChain = await createRetrievalChain({
-    combineDocsChain: documentChain,
-    retriever: historyAwareRetrieverChain,
-  });
+  const generateResponse = async (
+    state: typeof RAGStateAnnotation.State,
+    config: RunnableConfig,
+  ) => {
+    let responseChainPrompt;
+    let formattedPrompt;
+    const context = state.sourceDocuments
+      .map((sourceDoc) => {
+        return `<doc>\n${sourceDoc.pageContent}\n</doc>`;
+      })
+      .join("\n\n");
+    if (modelProvider === "ollama") {
+      responseChainPrompt = ChatPromptTemplate.fromMessages<{
+        context: string;
+        messages: BaseMessage[];
+      }>([
+        ["system", OLLAMA_RESPONSE_SYSTEM_TEMPLATE],
+        ["placeholder", "{messages}"],
+      ]);
+      formattedPrompt = await responseChainPrompt.invoke(
+        {
+          context,
+          messages: state.messages,
+        },
+        config,
+      );
+    } else if (modelProvider === "webllm") {
+      responseChainPrompt = ChatPromptTemplate.fromMessages<{
+        context: string;
+        messages: BaseMessage[];
+      }>([
+        ["system", WEBLLM_RESPONSE_SYSTEM_TEMPLATE],
+        [
+          "user",
+          "When responding to me, use the following documents as context:\n<context>\n{context}\n</context>",
+        ],
+        [
+          "assistant",
+          "Understood! I will use the documents between the above <context> tags as context when answering your next questions.",
+        ],
+        ["placeholder", "{messages}"],
+      ]);
+      formattedPrompt = await responseChainPrompt.invoke(
+        {
+          context,
+          messages: state.messages,
+        },
+        config,
+      );
+    } else {
+      // ChromeAI is a text-in, text-out LLM and we therefore format chat history as strings
+      responseChainPrompt = PromptTemplate.fromTemplate(
+        CHROME_AI_SYSTEM_TEMPLATE,
+      );
+      const conversationTurns = state.messages
+        .map((message) => {
+          const role = message.getType() === "ai" ? "assistant" : "user";
+          return `${role}: ${message.content}`;
+        })
+        .join("\n");
+      formattedPrompt = await responseChainPrompt.invoke(
+        {
+          context,
+          conversation_turns: conversationTurns,
+        },
+        config,
+      );
+    }
 
-  // retrievalChain streams back an object with a few fields.
-  // We only want to stream back the answer, so pick it out.
-  const fullChain = retrievalChain.pick("answer");
+    const response = await model
+      .withConfig({ tags: ["response_generator"] })
+      .invoke(formattedPrompt, config);
+    // ChromeAI is a text-in, text-out LLM and we therefore must wrap it in a message-like object
+    if (typeof response === "string") {
+      return { messages: [{ role: "assistant", content: response }] };
+    } else {
+      return { messages: [response] };
+    }
+  };
 
-  let formattedChatHistory =
-    modelProvider === "chrome_ai"
-      ? chatHistory
-          .map((message) => {
-            return `${message._getType()}: ${message.content}`;
-          })
-          .join("\n")
-      : chatHistory;
-  const stream = await fullChain.stream(
+  const graph = new StateGraph(RAGStateAnnotation)
+    .addNode("rephraseQuestion", rephraseQuestion)
+    .addNode("retrieveSourceDocuments", retrieveSourceDocuments)
+    .addNode("generateResponse", generateResponse)
+    .addConditionalEdges("__start__", async (state) => {
+      if (state.messages.length > 1) {
+        return "rephraseQuestion";
+      }
+      return "retrieveSourceDocuments";
+    })
+    .addEdge("rephraseQuestion", "retrieveSourceDocuments")
+    .addEdge("retrieveSourceDocuments", "generateResponse")
+    .compile();
+
+  const eventStream = await graph.streamEvents(
     {
-      input: text,
-      chat_history: formattedChatHistory,
+      messages,
     },
     {
+      version: "v2",
       callbacks: devModeTracer !== undefined ? [devModeTracer] : [],
     },
   );
 
-  for await (const chunk of stream) {
-    if (chunk) {
-      self.postMessage({
-        type: "chunk",
-        data: chunk,
-      });
+  for await (const { event, data, tags } of eventStream) {
+    if (tags?.includes("response_generator")) {
+      if (event === "on_chat_model_stream") {
+        self.postMessage({
+          type: "chunk",
+          data: data.chunk.content,
+        });
+        // Chrome LLM is a text-in/text-out model
+      } else if (event === "on_llm_stream") {
+        self.postMessage({
+          type: "chunk",
+          data: data.chunk.text,
+        });
+      }
     }
   }
 
@@ -255,26 +337,26 @@ self.addEventListener("message", async (event: { data: any }) => {
   } else {
     const modelProvider = event.data.modelProvider;
     const modelConfig = event.data.modelConfig;
-    let chatModel: BaseChatModel | LanguageModelLike;
+    let model: BaseChatModel | BaseLLM | LanguageModelLike;
     if (modelProvider === "webllm") {
       const webllmModel = new ChatWebLLM(modelConfig);
       await webllmModel.initialize((event) =>
         self.postMessage({ type: "init_progress", data: event }),
       );
-      // Best guess at Phi-3 tokens
-      chatModel = webllmModel.bind({
+      // Best guess at Phi-3.5 tokens
+      model = webllmModel.bind({
         stop: ["\nInstruct:", "Instruct:", "<hr>", "\n<hr>"],
       });
     } else if (modelProvider === "chrome_ai") {
-      chatModel = new ChromeAI(modelConfig);
+      model = new ChromeAI(modelConfig);
     } else {
-      chatModel = new ChatOllama(modelConfig);
+      model = new ChatOllama(modelConfig);
     }
     try {
       await generateRAGResponse(event.data.messages, {
         devModeTracer,
         modelProvider,
-        chatModel,
+        model,
       });
     } catch (e: any) {
       self.postMessage({

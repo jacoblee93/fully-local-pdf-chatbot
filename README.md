@@ -48,7 +48,7 @@ ollama pull mistral
 
 ## 🌐 Fully in-browser (WebLLM)
 
-You can run the entire stack your browser via [WebLLM](https://webllm.mlc.ai/). The model used is the small, 3.8B parameter [Phi-3](https://huggingface.co/microsoft/phi-3).
+You can run the entire stack your browser via [WebLLM](https://webllm.mlc.ai/). The model used is the small, 3.8B parameter [Phi-3.5](https://huggingface.co/microsoft/Phi-3.5-mini-instruct).
 
 You don't have to leave the window to set this up - just upload a PDF and go!
 
