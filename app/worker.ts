@@ -165,7 +165,7 @@ Given the above conversation, rephrase the following question into a standalone,
     config: RunnableConfig,
   ) => {
     let retrieverQuery: string;
-    if (state.messages.length > 1) {
+    if (state.rephrasedQuestion != null) {
       retrieverQuery = state.rephrasedQuestion;
     } else {
       retrieverQuery = state.messages.at(-1)?.content as string;
